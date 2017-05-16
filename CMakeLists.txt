@@ -32,3 +32,5 @@ add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build even
     COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
         "${FREEIMAGE_LIB}/FreeImaged.dll"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>)   
+
+# TODO add copying of shader/model/texture resources
