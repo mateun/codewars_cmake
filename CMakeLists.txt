@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 3.6)
+project(codewars)
+
+set(FREEIMAGE_INCLUDE C:/Users/martin/Documents/Projects/C++/FreeImage/Source)
+set(ASSIMP_INCLUDE C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/include)
+set(ASSIMP_LIB C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/build/code/Debug)
+set(FREEIMAGE_LIB C:/Users/martin/Documents/Projects/C++/FreeImage/Dist/x32)
+
+
+include_directories(engine/include games/spacefight/include)
+include_directories(${FREEIMAGE_INCLUDE})
+include_directories(${ASSIMP_INCLUDE})
+include_directories(C:/Program Files (x86)/Windows Kits/10/Include/10.0.10240.0/ucrt)
+include_directories(C:/Program Files (x86)/Windows Kits/10/Include/10.0.14393.0/um)
+
+link_directories(${ASSIMP_LIB} ${FREEIMAGE_LIB})
+
+
+file(GLOB engine_sources engine/src/*.cpp)
+file(GLOB game_sources games/spacefight/src/*.cpp)
+
+
+add_executable(engine_main WIN32 ${engine_sources} ${game_sources})
+target_link_libraries(engine_main assimp-vc120-mt.lib FreeImaged.lib dxgi.lib d3d11.lib d3dcompiler.lib kernel32.lib)
+
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
+        "${ASSIMP_LIB}/assimp-vc2017-mt.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>)    
+
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
+        "${FREEIMAGE_LIB}/FreeImaged.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>)   
