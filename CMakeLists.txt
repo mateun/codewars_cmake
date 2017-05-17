@@ -33,4 +33,34 @@ add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build even
         "${FREEIMAGE_LIB}/FreeImaged.dll"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>)   
 
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/engine/shaders"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>/shaders)  
+
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/engine/textures"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>/textures)  
+
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/engine/models"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>/models) 
+		
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/games/spacefight/models"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>)  
+
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/games/spacefight/textures"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>/textures)  
+
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/games/spacefight/sound"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>)  
+
 # TODO add copying of shader/model/texture resources
