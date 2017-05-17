@@ -157,7 +157,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	safeRelease(&tex);
 	loadTextureFromFile(GetIntroImageName(), &tex, renderer);
 	renderer->clearBackbuffer(clearColors);
-	projMatSplash = DirectX::XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f);
+	modelMat = DirectX::XMMatrixScaling(1.8f, 1.8f, 1.8f);
+	projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
 	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	Sleep(3000);
