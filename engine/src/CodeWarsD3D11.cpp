@@ -28,6 +28,7 @@ LPDIRECTINPUTDEVICE8 diKeyboard = nullptr;
 LPDIRECTINPUTDEVICE8 diMouse = nullptr;
 DIPROPDWORD diProps;
 bool keyState[256];
+DIMOUSESTATE mouseState;
 int mouseMovX, mouseMovY;
 // end DINPUT
 
@@ -250,13 +251,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		DIDEVICEOBJECTDATA data;
 		ZeroMemory(&data, sizeof(data));
 
+		res = diMouse->GetDeviceState(sizeof(mouseState), (void**)&mouseState);
+		if (FAILED(res)) {
+			diMouse->Acquire();
+		}
+		frameInput.relMouseMovX = mouseState.lX;
+		frameInput.relMouseMovY = mouseState.lY;
+		
 		res = diMouse->GetDeviceData(sizeof(data), &data, &numElements, 0);
 		if (FAILED(res)) {
 			diMouse->Acquire();
 		}
 		switch (data.dwOfs) {
-			case DIMOFS_X: frameInput.relMouseMovX = data.dwData; break;
-			case DIMOFS_Y: frameInput.relMouseMovY = data.dwData; break;
 			case DIMOFS_BUTTON0: 
 				if (data.dwData) {
 					frameInput.mouse1Down = true; break;

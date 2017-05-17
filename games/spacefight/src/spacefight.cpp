@@ -29,6 +29,15 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 
 	if (input->mouse2Down) OutputDebugString("mousebutton2 pressed!\n");
 	if (input->mouse2Up) OutputDebugString("mousebutton2 up\n");
+
+	
+		// track the movement
+	if (input->relMouseMovX != 0) {
+		char buf[500];
+		sprintf_s(buf, 500, "mouse X__: %d\n", input->relMouseMovX);
+		OutputDebugString(buf);
+	}
+	
 	
 	_menuShipRot = 0.00002f;
 	XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
