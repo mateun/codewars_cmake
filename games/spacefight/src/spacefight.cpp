@@ -11,7 +11,7 @@ Game* GetGame() {
 }
 
 std::string GetIntroImageName() {
-	return "textures/games/spacefight/spacefight_intro.png";
+	return "games/spacefight/textures/spacefight_intro.png";
 }
 
 void Spacefight::DoFrame(Renderer& renderer) {
@@ -33,7 +33,7 @@ void Spacefight::DoFrame(Renderer& renderer) {
 
 	// Draw a start button
 	ID3D11Texture2D* buttonTex;
-	loadTextureFromFile("textures/games/spacefight/btn_start.png", &buttonTex, &renderer);
+	loadTextureFromFile("games/spacefight/textures/btn_start.png", &buttonTex, &renderer);
 
 
 	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
