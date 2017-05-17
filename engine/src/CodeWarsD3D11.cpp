@@ -11,13 +11,17 @@
 #include "game.h"
 #include "model_import.h"
 #include "resource_management.h"
+#include "input.h"
 
 #define MAX_LOADSTRING 100
+
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+
+InputEvent frameInputEvents[100];
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -177,7 +181,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	
 	#pragma endregion
 
-	// Main message loop when done with the static resources
+	////////////////////////////////////////////////
+	// Main message loop wrapping the game loop
+	////////////////////////////////////////////////
 	MSG msg;
 	while (true) { 
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) { 
@@ -187,19 +193,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		if (msg.message == WM_QUIT) break;
 
-#pragma region test_engine_frame
-		
 
-		//renderer->clearBackbuffer(clearColors);
-		//renderer->setViewport(0, 0, 800, 600);
-		//renderer->renderMesh(imp_pos, imp_uvs, imp_indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
-		//renderer->presentBackBuffer();
-#pragma endregion
-
-		game->DoFrame(*renderer);
-
-		
-
+		game->DoFrame(*renderer, frameInputEvents);
+		for (auto& ie : frameInputEvents) {
+			ie.type = 0;
+		}
 	}
 
 	safeRelease(&tex);
@@ -297,6 +295,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			if (wParam == VK_ESCAPE) DestroyWindow(hWnd);
 		}
+
+	// This method works, but it's horribly slow :) 
+	// TODO switch to direct input for more direct response to input events!
+	case WM_LBUTTONUP: 
+	{
+		InputEvent ie;
+		ie.type = 1;
+		ie.mouseInfo.x = 12;
+		ie.mouseInfo.y = 89;
+		
+		frameInputEvents[0] = ie;
+	}
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);

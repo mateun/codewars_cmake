@@ -17,10 +17,13 @@ std::string GetIntroImageName() {
 	return "games/spacefight/textures/spacefight_intro.png";
 }
 
-void Spacefight::DoFrame(Renderer& renderer) {
+void Spacefight::DoFrame(Renderer& renderer, InputEvent* input) {
+
+	if (input[0].type == 1) {
+		OutputDebugString("mouse up!\n");
+	}
 	
 	_menuShipRot = 0.00002f;
-
 	XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
 	XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
 	XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), _menuShipRot*4.0f);
@@ -28,14 +31,11 @@ void Spacefight::DoFrame(Renderer& renderer) {
 	_modelMat = XMMatrixMultiply(_modelMat, rotMatZ);
 	_modelMat = XMMatrixMultiply(_modelMat, rotMatY);
 
-
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, 800, 600);
 	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
-	//renderer.presentBackBuffer();
-
-	// Draw a start button
 	
+	// Draw a start button
 	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
 	XMMATRIX scaleMat = DirectX::XMMatrixScaling(0.7f, 0.7f, 0.7f);
 	// Move the button to the lower left corner
@@ -67,8 +67,6 @@ void Spacefight::DoFrame(Renderer& renderer) {
 	indices.push_back(3);
 	indices.push_back(1);
 
-	//renderer.clearBackbuffer(clearColors);
-	//renderer.setViewport(0, 0, 800, 600);
 	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
 	renderer.presentBackBuffer();
 
