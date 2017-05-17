@@ -23,9 +23,9 @@ void Spacefight::DoFrame(Renderer& renderer) {
 
 	XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
 	XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
-	XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), _menuShipRot*2.0f);
-	XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), _menuShipRot);
-	//_modelMat = XMMatrixMultiply(_modelMat, rotMatZ);
+	XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), _menuShipRot*4.0f);
+	XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), _menuShipRot*2.0f);
+	_modelMat = XMMatrixMultiply(_modelMat, rotMatZ);
 	_modelMat = XMMatrixMultiply(_modelMat, rotMatY);
 
 
@@ -35,10 +35,7 @@ void Spacefight::DoFrame(Renderer& renderer) {
 	//renderer.presentBackBuffer();
 
 	// Draw a start button
-	ID3D11Texture2D* buttonTex;
-	loadTextureFromFile("games/spacefight/textures/btn_start.png", &buttonTex, &renderer);
-
-
+	
 	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
 	XMMATRIX scaleMat = DirectX::XMMatrixScaling(0.7f, 0.7f, 0.7f);
 	// Move the button to the lower left corner
@@ -72,12 +69,8 @@ void Spacefight::DoFrame(Renderer& renderer) {
 
 	//renderer.clearBackbuffer(clearColors);
 	//renderer.setViewport(0, 0, 800, 600);
-	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, buttonTex);
+	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
 	renderer.presentBackBuffer();
-
-	buttonTex->Release();
-	buttonTex = nullptr;
-
 
 }
 
@@ -98,6 +91,7 @@ void Spacefight::Init(Renderer& renderer) {
 	_shipModel = new Model();
 	importModel("models/corvette1.obj", _shipModel);
 	loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &_shipTexture, &renderer);
+	loadTextureFromFile("games/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
 
 	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -55);
 	XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
@@ -173,6 +167,7 @@ void Spacefight::ShutDown() {
 	safeRelease(&_ps);
 	safeRelease(&_shipTexture);
 	safeRelease(&_inputLayout);
+	safeRelease(&_startButtonTex);
 	if (_shipModel) {
 		delete(_shipModel); _shipModel = nullptr;
 	}

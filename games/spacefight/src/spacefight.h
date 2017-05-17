@@ -22,5 +22,6 @@ private:
 	ID3D11InputLayout* _inputLayout;
 	Model* _shipModel;
 	ID3D11Texture2D* _shipTexture;
+	ID3D11Texture2D* _startButtonTex;
 	float _menuShipRot = 0;
 };

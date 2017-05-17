@@ -198,6 +198,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		game->DoFrame(*renderer);
 
+		
+
 	}
 
 	safeRelease(&tex);
