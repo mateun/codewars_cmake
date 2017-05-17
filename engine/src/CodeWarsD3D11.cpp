@@ -121,7 +121,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	modelMat = DirectX::XMMatrixScaling(2, 2, 2);
 	//modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
 
-	XMMATRIX viewMatS = XMMatrixIdentity();
 	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
 	// This IS IMPORTANT!!! Without this transposition, the quad is totally screwed :) !
 	modelMat = XMMatrixTranspose(modelMat);
