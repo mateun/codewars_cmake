@@ -10,6 +10,7 @@
 #include "textures.h"
 #include "game.h"
 #include "model_import.h"
+#include "resource_management.h"
 
 #define MAX_LOADSTRING 100
 
@@ -57,7 +58,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
 	XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
-	XMMATRIX projMat = DirectX::XMMatrixPerspectiveFovLH(0.45, 4.0f / 3.0f, 0.1, 100);
+	XMMATRIX projMat = DirectX::XMMatrixPerspectiveFovLH(0.45f, 4.0f / 3.0f, 0.1f, 100.0f);
 	modelMat = XMMatrixTranspose(modelMat);
 	viewMat = XMMatrixTranspose(viewMat);
 	projMat = XMMatrixTranspose(projMat);
@@ -71,11 +72,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (errBlob)
 		{
 			OutputDebugStringA((char*)errBlob->GetBufferPointer());
-			errBlob->Release();
+			safeRelease(&errBlob);
 		}
 
 		if (vs)
-			vs->Release();
+			safeRelease(&vs);
 
 		exit(1);
 	}
@@ -86,11 +87,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (errBlob)
 		{
 			OutputDebugStringA((char*)errBlob->GetBufferPointer());
-			errBlob->Release();
+			safeRelease(&errBlob);
 		}
 
 		if (ps)
-			ps->Release();
+			safeRelease(&ps);
 
 		exit(1);
 	}
@@ -121,12 +122,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
 
 	XMMATRIX viewMatS = XMMatrixIdentity();
-	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(5, 5, 0.1, 100);
+	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f);
 	// This IS IMPORTANT!!! Without this transposition, the quad is totally screwed :) !
 	modelMat = XMMatrixTranspose(modelMat);
 	projMatSplash = XMMatrixTranspose(projMatSplash);
 
-	float clearColors[] = { 0.01, 0.02, 0.02, 1.0 };
+	
+	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
 	std::vector<XMFLOAT3> mesh;
 	mesh.push_back({ -.5, 0.5, 0 });
 	mesh.push_back({ .5, -.5, 0 });
@@ -145,19 +147,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	indices.push_back(3);
 	indices.push_back(1);
 
-	
 	renderer->setViewport(0, 0, 800, 600);
 	renderer->clearBackbuffer(clearColors);
 	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	
-	
+	Sleep(2000);
 
 	// render loading screen
-	tex->Release();
+	safeRelease(&tex);
 	loadTextureFromFile(GetIntroImageName(), &tex, renderer);
 	renderer->clearBackbuffer(clearColors);
-	projMatSplash = DirectX::XMMatrixOrthographicLH(5, 5, 0.1, 100);
+	projMatSplash = DirectX::XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f);
 	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	Sleep(3000);
@@ -201,20 +202,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	}
 
-	tex->Release();
-	inputLayout->Release();
-	pShader->Release();
-	vshader->Release();
-
-	ps->Release();
-	vs->Release();
-	
-	if (errBlob) errBlob->Release();
-
+	safeRelease(&tex);
+	safeRelease(&inputLayout);
+	safeRelease(&pShader);
+	safeRelease(&vshader);
+	safeRelease(&ps);
+	safeRelease(&vs);
+	safeRelease(&errBlob);
 	game->ShutDown();
+	if (renderer) delete(renderer);
 	
-	delete(game);
-	delete(renderer);
     return (int) msg.wParam;
 }
 

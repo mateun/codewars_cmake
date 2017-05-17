@@ -5,9 +5,12 @@
 #include "shaders.h"
 #include <d3dcompiler.h>
 #include "model.h"
+#include <resource_management.h>
+
+static Spacefight spacefight;
 
 Game* GetGame() {
-	return new Spacefight();
+	return &spacefight;
 }
 
 std::string GetIntroImageName() {
@@ -37,18 +40,18 @@ void Spacefight::DoFrame(Renderer& renderer) {
 
 
 	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
-	XMMATRIX scaleMat = DirectX::XMMatrixScaling(0.7, 0.7, 0.7);
+	XMMATRIX scaleMat = DirectX::XMMatrixScaling(0.7f, 0.7f, 0.7f);
 	// Move the button to the lower left corner
-	XMMATRIX transMat = DirectX::XMMatrixTranslation(2.2, -1.95, 0);	
+	XMMATRIX transMat = DirectX::XMMatrixTranslation(2.2f, -1.95f, 0.0f);	
 	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
 	XMFLOAT3 eyePosS = XMFLOAT3(0, 0, -2);
 	XMFLOAT3 eyeDirS = XMFLOAT3(0, 0, 1);
 	XMFLOAT3 upDirS = XMFLOAT3(0, 1, 0);
 	XMMATRIX viewMatS = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePosS), XMLoadFloat3(&eyeDirS), XMLoadFloat3(&upDirS)));
 	
-	XMMATRIX projMatSplash = XMMatrixTranspose(XMMatrixOrthographicLH(5, 5, 0.1, 100));
+	XMMATRIX projMatSplash = XMMatrixTranspose(XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f));
 
-	float clearColors[] = { 0.01, 0.02, 0.02, 1.0 };
+	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
 	std::vector<XMFLOAT3> mesh;
 	mesh.push_back({ -0.5f, 0.5f, 0 });
 	mesh.push_back({ .5f, -.5f, 0 });
@@ -101,7 +104,7 @@ void Spacefight::Init(Renderer& renderer) {
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
 	_modelMat = DirectX::XMMatrixScaling(1.5, 1.5, 1.5);
 	_viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
-	_projMat = DirectX::XMMatrixPerspectiveFovLH(0.45, 4.0f / 3.0f, 0.1, 100);
+	_projMat = DirectX::XMMatrixPerspectiveFovLH(0.45f, 4.0f / 3.0f, 0.1f, 100.0f);
 	_modelMat = XMMatrixTranspose(_modelMat);
 	_viewMat = XMMatrixTranspose(_viewMat);
 	_projMat = XMMatrixTranspose(_projMat);
@@ -141,7 +144,6 @@ void Spacefight::Init(Renderer& renderer) {
 	}
 	
 	CreateVertexShader(renderer.getDevice(), vs, &_vs);
-	ID3D11PixelShader* pShader;
 	CreatePixelShader(renderer.getDevice(), ps, &_ps);
 	
 	/// END SHADER SETUP
@@ -167,9 +169,11 @@ void Spacefight::Init(Renderer& renderer) {
 }
 
 void Spacefight::ShutDown() {
-	_vs->Release(); _vs = nullptr;
-	_ps->Release(); _ps = nullptr;
-	_shipTexture->Release(); _shipTexture = nullptr;
-	_inputLayout->Release(); _inputLayout = nullptr;
-	delete(_shipModel); _shipModel = nullptr;
+	safeRelease(&_vs);
+	safeRelease(&_ps);
+	safeRelease(&_shipTexture);
+	safeRelease(&_inputLayout);
+	if (_shipModel) {
+		delete(_shipModel); _shipModel = nullptr;
+	}
 }
