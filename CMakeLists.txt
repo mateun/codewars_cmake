@@ -21,7 +21,7 @@ file(GLOB game_sources games/spacefight/src/*.cpp)
 
 
 add_executable(engine_main WIN32 ${engine_sources} ${game_sources})
-target_link_libraries(engine_main assimp-vc120-mt.lib FreeImaged.lib dxgi.lib d3d11.lib d3dcompiler.lib kernel32.lib)
+target_link_libraries(engine_main assimp-vc120-mt.lib FreeImaged.lib dxgi.lib dxguid.lib d3d11.lib dinput8.lib d3dcompiler.lib kernel32.lib)
 
 add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."

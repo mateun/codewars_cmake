@@ -9,7 +9,7 @@ public:
 	Spacefight();
 	~Spacefight();
 	virtual void Init(Renderer& renderer); 
-	virtual void DoFrame(Renderer& renderer, InputEvent* input) override;
+	virtual void DoFrame(Renderer& renderer, FrameInput* input) override;
 	virtual void ShutDown();
 
 private:

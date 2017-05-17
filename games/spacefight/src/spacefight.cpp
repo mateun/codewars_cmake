@@ -6,6 +6,7 @@
 #include <d3dcompiler.h>
 #include "model.h"
 #include <resource_management.h>
+#include <dinput.h>
 
 static Spacefight spacefight;
 
@@ -17,11 +18,17 @@ std::string GetIntroImageName() {
 	return "games/spacefight/textures/spacefight_intro.png";
 }
 
-void Spacefight::DoFrame(Renderer& renderer, InputEvent* input) {
+void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 
-	if (input[0].type == 1) {
-		OutputDebugString("mouse up!\n");
+	if (input->keyState[DIK_A]) {
+		OutputDebugString("A pressed!\n");
 	}
+
+	if (input->mouse1Down) OutputDebugString("mousebutton1 pressed!\n");
+	if (input->mouse1Up) OutputDebugString("mousebutton1 up\n");
+
+	if (input->mouse2Down) OutputDebugString("mousebutton2 pressed!\n");
+	if (input->mouse2Up) OutputDebugString("mousebutton2 up\n");
 	
 	_menuShipRot = 0.00002f;
 	XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);

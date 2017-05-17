@@ -12,6 +12,7 @@
 #include "model_import.h"
 #include "resource_management.h"
 #include "input.h"
+#include <dinput.h>
 
 #define MAX_LOADSTRING 100
 
@@ -21,7 +22,50 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
-InputEvent frameInputEvents[100];
+// DINPUT
+LPDIRECTINPUT8 di = nullptr;
+LPDIRECTINPUTDEVICE8 diKeyboard = nullptr;
+LPDIRECTINPUTDEVICE8 diMouse = nullptr;
+DIPROPDWORD diProps;
+bool keyState[256];
+int mouseMovX, mouseMovY;
+// end DINPUT
+
+void initDirectInput(HINSTANCE hinstance, HWND hwnd) {
+	HRESULT res = DirectInput8Create(hinstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&di, nullptr);
+	if (FAILED(res)) {
+		OutputDebugString("failed to create directinput8\n");
+		exit(1);
+	}
+
+	// keyboard
+	res = di->CreateDevice(GUID_SysKeyboard, &diKeyboard, nullptr);
+	if (FAILED(res)) { OutputDebugString("failed to create keyboard device\n"); exit(1); }
+	res = diKeyboard->SetDataFormat(&c_dfDIKeyboard);
+	if (FAILED(res)) { OutputDebugString("failed to set default data format for keyboard\n"); exit(1); }
+	res = diKeyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	if (FAILED(res)) { OutputDebugString("failed to set cooperative level\n"); exit(1); }
+
+
+	// mouse
+	res = di->CreateDevice(GUID_SysMouse, &diMouse, nullptr);
+	if (FAILED(res)) { OutputDebugString("failed to create mouse device\n"); exit(1); }
+	res = diMouse->SetDataFormat(&c_dfDIMouse);
+	if (FAILED(res)) { OutputDebugString("failed to set default data for mouse device\n"); exit(1); }
+	res = diMouse->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	if (FAILED(res)) { OutputDebugString("failed to set cooperative level for mouse device\n"); exit(1); }
+
+	ZeroMemory(&diProps, sizeof(diProps));
+	diProps.diph.dwSize = sizeof(DIPROPDWORD);
+	diProps.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+	diProps.diph.dwObj = 0;
+	diProps.diph.dwHow = DIPH_DEVICE;
+	// buffer size
+	diProps.dwData = 16;
+	diMouse->SetProperty(DIPROP_BUFFERSIZE, &diProps.diph);
+
+
+}
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -193,13 +237,53 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		if (msg.message == WM_QUIT) break;
 
-
-		game->DoFrame(*renderer, frameInputEvents);
-		for (auto& ie : frameInputEvents) {
-			ie.type = 0;
+		// gather the keyboard input
+		FrameInput frameInput;
+		HRESULT res = diKeyboard->GetDeviceState(sizeof(keyState), (void**) &keyState);
+		if (FAILED(res)) {
+			diKeyboard->Acquire();
 		}
+		frameInput.keyState = keyState;
+
+		// gather mouse data - bit more complicated...
+		DWORD numElements = 1;
+		DIDEVICEOBJECTDATA data;
+		ZeroMemory(&data, sizeof(data));
+
+		res = diMouse->GetDeviceData(sizeof(data), &data, &numElements, 0);
+		if (FAILED(res)) {
+			diMouse->Acquire();
+		}
+		switch (data.dwOfs) {
+			case DIMOFS_X: frameInput.relMouseMovX = data.dwData; break;
+			case DIMOFS_Y: frameInput.relMouseMovY = data.dwData; break;
+			case DIMOFS_BUTTON0: 
+				if (data.dwData) {
+					frameInput.mouse1Down = true; break;
+				}
+				else {
+					frameInput.mouse1Up = true; break;
+				}
+			case DIMOFS_BUTTON1:
+				if (data.dwData) {
+					frameInput.mouse2Down = true; break;
+				}
+				else {
+					frameInput.mouse2Up = true; break;
+				}
+		}
+
+		
+
+		// end input gathering
+
+		game->DoFrame(*renderer, &frameInput);
+		
 	}
 
+	diKeyboard->Unacquire();
+	safeRelease(&diKeyboard);
+	safeRelease(&di);
 	safeRelease(&tex);
 	safeRelease(&inputLayout);
 	safeRelease(&pShader);
@@ -270,6 +354,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    }
 
    renderer = new Renderer(800, 600, hWnd);
+   initDirectInput(hInst, hWnd);
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -295,18 +380,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			if (wParam == VK_ESCAPE) DestroyWindow(hWnd);
 		}
-
-	// This method works, but it's horribly slow :) 
-	// TODO switch to direct input for more direct response to input events!
-	case WM_LBUTTONUP: 
-	{
-		InputEvent ie;
-		ie.type = 1;
-		ie.mouseInfo.x = 12;
-		ie.mouseInfo.y = 89;
-		
-		frameInputEvents[0] = ie;
-	}
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
