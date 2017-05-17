@@ -122,7 +122,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
 
 	XMMATRIX viewMatS = XMMatrixIdentity();
-	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f);
+	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
 	// This IS IMPORTANT!!! Without this transposition, the quad is totally screwed :) !
 	modelMat = XMMatrixTranspose(modelMat);
 	projMatSplash = XMMatrixTranspose(projMatSplash);
@@ -149,7 +149,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	renderer->setViewport(0, 0, 800, 600);
 	renderer->clearBackbuffer(clearColors);
-	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, vshader, pShader, inputLayout, tex);
+	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	
 	Sleep(2000);
@@ -176,8 +176,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	float rotZ = 0.0f;
 	
 	#pragma endregion
-
-	
 
 	// Main message loop when done with the static resources
 	MSG msg;
