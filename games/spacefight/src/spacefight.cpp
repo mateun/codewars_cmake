@@ -42,7 +42,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	}
 	
 	
-	_menuShipRot = 0.00002f;
+	_menuShipRot = 0.00000f;
 	XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
 	XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
 	XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), _menuShipRot*4.0f);
@@ -83,7 +83,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	renderer.createRenderTargetViewForTexture(radarMapTex, &radarMapRTV);
 	renderer.createRenderTargetShaderResourceViewForTexture(radarMapTex, &radarMapSRV);
 	
-	XMFLOAT3 eyePos = XMFLOAT3(0, 90, 0);
+	XMFLOAT3 eyePos = XMFLOAT3(0, 25, 0);
 	XMFLOAT3 eyeDir = XMFLOAT3(0, -1, 0);
 	XMFLOAT3 upDir = XMFLOAT3(0, 0, 1);
 	XMMATRIX mapView = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
@@ -93,9 +93,11 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	renderer.setViewport(0, 0, 200, 160);
 	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
 	
-	renderer.setBackBufferRenderTarget();
 
-	// Move our map texture to the left of the screen
+	// After rendering the scene from birds eye view to our texture, 
+	// render the texture onto a quad.
+	// Move our map quad to the left of the screen.
+	renderer.setBackBufferRenderTarget();
 	transMat = DirectX::XMMatrixTranslation(-2.0f, -1.0f, 0.0f);
 	scaleMat = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
@@ -105,9 +107,6 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	safeRelease(&radarMapSRV);
 	safeRelease(&radarMapRTV);
 	safeRelease(&radarMapTex);
-	
-	
-
 	// END RENDER TO TEXTURE
 
 	renderer.presentBackBuffer();
