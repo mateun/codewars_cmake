@@ -4,9 +4,10 @@
 #include "textures.h"
 #include "shaders.h"
 #include <d3dcompiler.h>
-#include "model.h"
 #include <resource_management.h>
 #include <dinput.h>
+#include "model.h"
+#include "primitives.h"
 
 static Spacefight spacefight;
 
@@ -17,6 +18,8 @@ Game* GetGame() {
 std::string GetIntroImageName() {
 	return "games/spacefight/textures/spacefight_intro.png";
 }
+
+
 
 void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 
@@ -66,24 +69,21 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 
 	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
 	std::vector<XMFLOAT3> mesh;
-	mesh.push_back({ -0.5f, 0.5f, 0 });
-	mesh.push_back({ .5f, -.5f, 0 });
-	mesh.push_back({ -.5f, -.5f, 0 });
-	mesh.push_back({ .5f, .5f, 0 });
 	std::vector<XMFLOAT2> uvs;
-	uvs.push_back({ 0, 1 });
-	uvs.push_back({ 1, 0 });
-	uvs.push_back({ 0, 0 });
-	uvs.push_back({ 1, 1 });
 	std::vector<UINT> indices;
-	indices.push_back(0);
-	indices.push_back(1);
-	indices.push_back(2);
-	indices.push_back(0);
-	indices.push_back(3);
-	indices.push_back(1);
+	fillQuadVertexData(mesh, uvs, indices);
 
 	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
+
+	// 
+
+
+
+
+
+
+
+
 	renderer.presentBackBuffer();
 
 }
