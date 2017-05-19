@@ -47,7 +47,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
 	XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), _menuShipRot*4.0f);
 	XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), _menuShipRot*2.0f);
-	_modelMat = XMMatrixMultiply(_modelMat, rotMatZ);
+	//_modelMat = XMMatrixMultiply(_modelMat, rotMatZ);
 	_modelMat = XMMatrixMultiply(_modelMat, rotMatY);
 
 	renderer.clearBackbuffer(clearColors);
@@ -64,7 +64,6 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	XMFLOAT3 eyeDirS = XMFLOAT3(0, 0, 1);
 	XMFLOAT3 upDirS = XMFLOAT3(0, 1, 0);
 	XMMATRIX viewMatS = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePosS), XMLoadFloat3(&eyeDirS), XMLoadFloat3(&upDirS)));
-	
 	XMMATRIX projMatSplash = XMMatrixTranspose(XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f));
 
 	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
@@ -75,14 +74,41 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 
 	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
 
-	// 
+	// RENDER TO TEXTURE
+	// Render the whole image to a texture from above and display it
+	ID3D11Texture2D* radarMapTex;
+	ID3D11RenderTargetView* radarMapRTV;
+	ID3D11ShaderResourceView* radarMapSRV;
+	renderer.createRenderTargetTexture(200, 160, &radarMapTex);
+	renderer.createRenderTargetViewForTexture(radarMapTex, &radarMapRTV);
+	renderer.createRenderTargetShaderResourceViewForTexture(radarMapTex, &radarMapSRV);
+	
+	XMFLOAT3 eyePos = XMFLOAT3(0, 90, 0);
+	XMFLOAT3 eyeDir = XMFLOAT3(0, -1, 0);
+	XMFLOAT3 upDir = XMFLOAT3(0, 0, 1);
+	XMMATRIX mapView = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
+	renderer.setTextureRenderTarget(&radarMapRTV);
+	float clearColorsTex[] = { 0.01f, 0.02f, 0.8f, 1.0f };
+	renderer.clearTexture(clearColorsTex, radarMapRTV);
+	renderer.setViewport(0, 0, 200, 160);
+	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
+	
+	renderer.setBackBufferRenderTarget();
 
+	// Move our map texture to the left of the screen
+	transMat = DirectX::XMMatrixTranslation(-2.0f, -1.0f, 0.0f);
+	scaleMat = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
+	renderer.setViewport(0, 0, 800, 600);
+	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
 
+	safeRelease(&radarMapSRV);
+	safeRelease(&radarMapRTV);
+	safeRelease(&radarMapTex);
+	
+	
 
-
-
-
-
+	// END RENDER TO TEXTURE
 
 	renderer.presentBackBuffer();
 

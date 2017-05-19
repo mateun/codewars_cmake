@@ -28,6 +28,12 @@ Renderer::~Renderer() {
 
 }
 
+void Renderer::clearTexture(float *color, ID3D11RenderTargetView* rtv) {
+	ID3D11RenderTargetView* rtvs[1] = { rtv };
+	_ctx->OMSetRenderTargets(1, rtvs, nullptr);
+	_ctx->ClearRenderTargetView(rtv, color);
+}
+
 void Renderer::clearBackbuffer(float *clearColors) {
 	ID3D11RenderTargetView* rtvs[1] = { _rtv };
 	_ctx->OMSetRenderTargets(1, rtvs, _depthStencilView);
@@ -49,10 +55,10 @@ void Renderer::presentBackBuffer() {
 void Renderer::setViewport(int x, int y, int w, int h) {
 	D3D11_VIEWPORT vp;
 	ZeroMemory(&vp, sizeof(vp));
-	vp.TopLeftX = 0;
-	vp.TopLeftY = 0;
-	vp.Width = 800;
-	vp.Height = 600;
+	vp.TopLeftX = x;
+	vp.TopLeftY = y;
+	vp.Width = w;
+	vp.Height = h;
 	vp.MinDepth = 0;
 	vp.MaxDepth = 1;
 	_ctx->RSSetViewports(1, &vp);
@@ -193,6 +199,54 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	indexBuffer->Release();
 	uvBuf->Release();
 	vbuf->Release();
+}
+
+void Renderer::setTextureRenderTarget(ID3D11RenderTargetView** rtv) {
+	_ctx->OMSetRenderTargets(1, rtv, nullptr);
+}
+
+void Renderer::setBackBufferRenderTarget() {
+	_ctx->OMSetRenderTargets(1, &_rtv, _depthStencilView);
+}
+
+void Renderer::createRenderTargetViewForTexture(ID3D11Texture2D* tex, ID3D11RenderTargetView** rtv) {
+	D3D11_RENDER_TARGET_VIEW_DESC rtvd;
+	ZeroMemory(&rtvd, sizeof(rtvd));
+	rtvd.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	rtvd.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	rtvd.Texture2D.MipSlice = 0;
+	_device->CreateRenderTargetView(tex, &rtvd, rtv);
+}
+
+void Renderer::createRenderTargetShaderResourceViewForTexture(ID3D11Texture2D* tex, ID3D11ShaderResourceView** srv) {
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvd;
+	ZeroMemory(&srvd, sizeof(srvd));
+	srvd.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	srvd.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvd.Texture2D.MipLevels = 1;
+	srvd.Texture2D.MostDetailedMip = 0;
+	_device->CreateShaderResourceView(tex, &srvd, srv);
+}
+
+void Renderer::createRenderTargetTexture(UINT w, UINT h, ID3D11Texture2D** tex) {
+	ID3D11RenderTargetView* radarMapRTV;
+	ID3D11ShaderResourceView* radarMapRV;
+	
+	D3D11_TEXTURE2D_DESC mtd;
+	ZeroMemory(&mtd, sizeof(mtd));
+	mtd.Width = w;
+	mtd.Height = h;
+	mtd.MipLevels = 1;
+	mtd.ArraySize = 1;
+	mtd.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	mtd.SampleDesc.Count = 1;
+	mtd.Usage = D3D11_USAGE_DEFAULT;
+	mtd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	mtd.CPUAccessFlags = 0;
+	mtd.MiscFlags = 0;
+	_device->CreateTexture2D(&mtd, NULL, tex);
+
+	
 }
 
 

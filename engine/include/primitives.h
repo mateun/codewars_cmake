@@ -4,6 +4,9 @@
 #include <Windows.h>
 
 
+/**
+	Fills the position, uv and index data of a unit quad into the given vector references. 
+*/
 void fillQuadVertexData(std::vector<XMFLOAT3>& positions, std::vector<XMFLOAT2>& uvs, std::vector<UINT>& indices) {
 	
 	positions.push_back({ -0.5f, 0.5f, 0 });
