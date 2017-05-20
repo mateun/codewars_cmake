@@ -9,18 +9,15 @@ bool importModel(const std::string& file,
 	std::vector<UINT>& indices) {
 	Assimp::Importer importer;
 
-	const aiScene* scene = importer.ReadFile(file, aiProcess_Triangulate);
+	const aiScene* scene = importer.ReadFile(file, aiProcess_Triangulate /*| aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder /*aiProcess_FlipUVs */ | aiProcess_JoinIdenticalVertices);
 	if (!scene) {
 		OutputDebugString("model import failed!\n");
 		exit(1);
 	}
 
-	unsigned int numMeshes = scene->mRootNode->mChildren[0]->mNumMeshes;
+	unsigned int numMeshes = scene->mNumMeshes;
 	for (int i = 0; i < numMeshes; ++i) {
-		UINT idx = scene->mRootNode->mChildren[0]->mMeshes[i];
 		aiMesh* mesh = scene->mMeshes[i];
-		UINT numUVChannels = mesh->GetNumUVChannels();
-		bool hasTextureCoords = mesh->HasTextureCoords(0);
 		for (int v = 0; v < mesh->mNumVertices; ++v) {
 			aiVector3D vertex = mesh->mVertices[v];
 			aiVector3D texcoord = mesh->mTextureCoords[0][v];

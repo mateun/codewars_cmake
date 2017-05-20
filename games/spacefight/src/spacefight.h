@@ -21,7 +21,15 @@ private:
 	ID3D11PixelShader* _ps;
 	ID3D11InputLayout* _inputLayout;
 	Model* _shipModel;
+	Model* _simpleShipModel;
+	Model* _cardModel;
+	Model* _playTable;
 	ID3D11Texture2D* _shipTexture;
 	ID3D11Texture2D* _startButtonTex;
+	ID3D11Texture2D* _anjaniTex;
+	ID3D11Texture2D* _metalTex;
+
+
 	float _menuShipRot = 0;
+	float _sineUpDown = 0;
 };

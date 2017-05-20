@@ -42,17 +42,35 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	}
 	
 	
-	_menuShipRot = 0.00000f;
+	_menuShipRot += 0.0007f;
+	_modelMat = XMMatrixIdentity();
+	
+	_sineUpDown = sin(_menuShipRot)* 0.5f;
+	
+	char b[200];
+	sprintf_s(b, 200, "sine: %f\n", _sineUpDown);
+	OutputDebugString(b);
 	XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
 	XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
+	XMFLOAT3 xAxis = XMFLOAT3(1, 0, 0);
 	XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), _menuShipRot*4.0f);
-	XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), _menuShipRot*2.0f);
+	XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), _menuShipRot*0.0f);
+	XMMATRIX transZ = DirectX::XMMatrixTranslation(0, 0, _sineUpDown - 10.0f);
 	//_modelMat = XMMatrixMultiply(_modelMat, rotMatZ);
 	_modelMat = XMMatrixMultiply(_modelMat, rotMatY);
+	_modelMat = XMMatrixTranspose(XMMatrixMultiply(_modelMat, transZ));
 
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, 800, 600);
-	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
+	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
+	renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
+
+
+	XMMATRIX tableModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), 1.2);
+	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixScaling(2, 1, 2)));
+	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixTranslation(0, 0, -5)));
+	renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
+
 	
 	// Draw a start button
 	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
@@ -60,7 +78,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	// Move the button to the lower left corner
 	XMMATRIX transMat = DirectX::XMMatrixTranslation(2.2f, -1.95f, 0.0f);	
 	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
-	XMFLOAT3 eyePosS = XMFLOAT3(0, 0, -2);
+	XMFLOAT3 eyePosS = XMFLOAT3(0, 0, -1);
 	XMFLOAT3 eyeDirS = XMFLOAT3(0, 0, 1);
 	XMFLOAT3 upDirS = XMFLOAT3(0, 1, 0);
 	XMMATRIX viewMatS = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePosS), XMLoadFloat3(&eyeDirS), XMLoadFloat3(&upDirS)));
@@ -79,18 +97,18 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	ID3D11Texture2D* radarMapTex;
 	ID3D11RenderTargetView* radarMapRTV;
 	ID3D11ShaderResourceView* radarMapSRV;
-	renderer.createRenderTargetTexture(200, 160, &radarMapTex);
+	renderer.createRenderTargetTexture(400, 300, &radarMapTex);
 	renderer.createRenderTargetViewForTexture(radarMapTex, &radarMapRTV);
 	renderer.createRenderTargetShaderResourceViewForTexture(radarMapTex, &radarMapSRV);
 	
-	XMFLOAT3 eyePos = XMFLOAT3(0, 25, 0);
+	XMFLOAT3 eyePos = XMFLOAT3(0, 75, 0);
 	XMFLOAT3 eyeDir = XMFLOAT3(0, -1, 0);
 	XMFLOAT3 upDir = XMFLOAT3(0, 0, 1);
 	XMMATRIX mapView = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
 	renderer.setTextureRenderTarget(&radarMapRTV);
 	float clearColorsTex[] = { 0.01f, 0.02f, 0.8f, 1.0f };
 	renderer.clearTexture(clearColorsTex, radarMapRTV);
-	renderer.setViewport(0, 0, 200, 160);
+	renderer.setViewport(0, 0, 400, 300);
 	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
 	
 
@@ -128,14 +146,23 @@ void Spacefight::Init(Renderer& renderer) {
 	std::vector<XMFLOAT2> imp_uvs;
 	std::vector<UINT> imp_indices;
 	_shipModel = new Model();
+	_simpleShipModel = new Model();
+	_cardModel = new Model();
+	_playTable = new Model();
 	importModel("models/corvette1.obj", _shipModel);
+	importModel("games/spacefight/models/simple_ship1.obj", _simpleShipModel);
+	importModel("games/spacefight/models/card.obj", _cardModel);
+	importModel("games/spacefight/models/play_table.obj", _playTable);
+	//loadTextureFromFile("games/spacefight/simple_ship_diff.png", &_shipTexture, &renderer);
 	loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &_shipTexture, &renderer);
+	loadTextureFromFile("games/spacefight/models/ajani_diff.png", &_anjaniTex, &renderer);
 	loadTextureFromFile("games/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
+	loadTextureFromFile("games/spacefight/textures/StainedMetal.jpg", &_metalTex, &renderer);
 
-	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -55);
+	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -25);
 	XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
-	_modelMat = DirectX::XMMatrixScaling(1.5, 1.5, 1.5);
+	_modelMat = DirectX::XMMatrixScaling(5.1f, 5.1f, 5.1f);
 	_viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
 	_projMat = DirectX::XMMatrixPerspectiveFovLH(0.45f, 4.0f / 3.0f, 0.1f, 100.0f);
 	_modelMat = XMMatrixTranspose(_modelMat);
@@ -207,7 +234,13 @@ void Spacefight::ShutDown() {
 	safeRelease(&_shipTexture);
 	safeRelease(&_inputLayout);
 	safeRelease(&_startButtonTex);
+	safeRelease(&_anjaniTex);
+	safeRelease(&_metalTex);
+	if (_cardModel) {
+		delete(_cardModel); _cardModel = nullptr;
+	}
 	if (_shipModel) {
 		delete(_shipModel); _shipModel = nullptr;
 	}
+
 }

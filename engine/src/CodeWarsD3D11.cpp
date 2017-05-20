@@ -183,10 +183,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	mesh.push_back({ -.5, -.5, 0 });
 	mesh.push_back({ .5, .5, 0 });
 	std::vector<XMFLOAT2> uvs;
-	uvs.push_back({ 0, 1 });
-	uvs.push_back({ 1, 0 });
-	uvs.push_back({ 0, 0 });
 	uvs.push_back({ 1, 1 });
+	uvs.push_back({ 0, 0 });
+	uvs.push_back({ 1, 0 });
+	uvs.push_back({ 0, 1 });
 	std::vector<UINT> indices;
 	indices.push_back(0);
 	indices.push_back(1);
