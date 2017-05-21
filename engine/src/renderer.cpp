@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "renderer.h"
 #include <dxgi.h>
+#include <chrono>
+#include <string>
 
 Renderer::Renderer(int w, int h, HWND hWnd) {
 	init(w, h, hWnd);
@@ -69,15 +71,133 @@ void Renderer::render() {
 	
 }
 
+void printTime(const std::string& text, const std::chrono::microseconds& diff) {
+	char buf[800];
+	sprintf_s(buf, 800, " >>>>>>>>>>>> time diff: %s %d\n", text.c_str(), diff);
+	OutputDebugString(buf);
+}
+
+void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
+	ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, ID3D11Texture2D* tex) {
+
+	
+	// Bind buffers, shaders and input layout
+	_ctx->IASetIndexBuffer(model.indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	_ctx->VSSetShader(vs, 0, 0);
+	_ctx->PSSetShader(ps, 0, 0);
+	_ctx->IASetInputLayout(inputLayout);
+	UINT stride = sizeof(XMFLOAT3);
+	UINT offset = 0;
+	_ctx->IASetVertexBuffers(0, 1, &model.posBuffer, &stride, &offset);
+	UINT uvstride = sizeof(XMFLOAT2);
+	_ctx->IASetVertexBuffers(1, 1, &model.uvBuffer, &uvstride, &offset);
+	_ctx->IASetVertexBuffers(2, 1, &model.normalBuffer, &stride, &offset);
+
+	// Handle mvp matrices
+	D3D11_BUFFER_DESC mbd;
+	ZeroMemory(&mbd, sizeof(mbd));
+	mbd.Usage = D3D11_USAGE_DYNAMIC;
+	mbd.ByteWidth = sizeof(MatrixBufferType);
+	mbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	mbd.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+	ID3D11Buffer* matrixBuffer;
+	HRESULT res = _device->CreateBuffer(&mbd, nullptr, &matrixBuffer);
+	if (FAILED(res)) {
+		OutputDebugStringW(L"matrix constant buffer creation failed\n");
+		exit(1);
+	}
+	D3D11_MAPPED_SUBRESOURCE bufSR;
+	MatrixBufferType* dataPtr;
+	res = _ctx->Map(matrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &bufSR);
+	dataPtr = (MatrixBufferType*)bufSR.pData;
+	dataPtr->world = modelMatrix;
+	dataPtr->view = viewMatrix;
+	dataPtr->proj = projMatrix;
+	_ctx->Unmap(matrixBuffer, 0);
+	_ctx->VSSetConstantBuffers(0, 1, &matrixBuffer);
+
+	// Handle lights
+	D3D11_BUFFER_DESC lbd;
+	ZeroMemory(&lbd, sizeof(lbd));
+	lbd.Usage = D3D11_USAGE_DYNAMIC;
+	lbd.ByteWidth = sizeof(LightBufferType);
+	lbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	lbd.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+	ID3D11Buffer* lightBuffer;
+	res = _device->CreateBuffer(&lbd, nullptr, &lightBuffer);
+	if (FAILED(res)) {
+		OutputDebugStringW(L"light constant buffer creation failed\n");
+		exit(1);
+	}
+
+	LightBufferType* dataPtrLight;
+	res = _ctx->Map(lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &bufSR);
+	dataPtrLight = (LightBufferType*)bufSR.pData;
+	dataPtrLight->ambientcol = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	_ctx->Unmap(lightBuffer, 0);
+	_ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
+
+
+	// Handle textures
+	ID3D11SamplerState* samplerState = nullptr;
+	ID3D11ShaderResourceView* srv = nullptr;
+	if (tex) {
+
+		_device->CreateShaderResourceView(tex, NULL, &srv);
+		_ctx->PSSetShaderResources(0, 1, &srv);
+
+		D3D11_SAMPLER_DESC sd;
+		ZeroMemory(&sd, sizeof(sd));
+		sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		sd.MinLOD = 0;
+		sd.MaxLOD = D3D11_FLOAT32_MAX;
+
+		_device->CreateSamplerState(&sd, &samplerState);
+		_ctx->PSSetSamplers(0, 1, &samplerState);
+	}
+
+	_ctx->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Setting wireframe RS
+	ID3D11RasterizerState* rs;
+	D3D11_RASTERIZER_DESC rd;
+	ZeroMemory(&rd, sizeof(rd));
+	rd.FillMode = D3D11_FILL_SOLID;
+	rd.DepthClipEnable = true;
+	rd.CullMode = D3D11_CULL_BACK;
+	res = _device->CreateRasterizerState(&rd, &rs);
+	if (FAILED(res)) {
+		OutputDebugStringW(L"wireframe rs failed\n");
+		exit(1);
+	}
+	_ctx->RSSetState(rs);
+	// end RS
+
+	auto start = std::chrono::high_resolution_clock::now();
+	_ctx->DrawIndexed(model.indices.size(), 0, 0);
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	printTime("drawCall micros: ", diff);
+
+	// cleanup
+	safeRelease(&rs);
+	safeRelease(&samplerState);
+	safeRelease(&srv);
+	safeRelease(&lightBuffer);
+	safeRelease(&matrixBuffer);
+	
+}
 
 void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<XMFLOAT3>& normals,
 	const std::vector<UINT>& indices, 
 	const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
 	ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, ID3D11Texture2D* tex) {
+
+	auto start = std::chrono::high_resolution_clock::now();
 	ID3D11Buffer* vbuf;
-	meshVertices.at(0);
-
-
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DYNAMIC;
@@ -85,11 +205,13 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	_device->CreateBuffer(&bd, NULL, &vbuf);
-
 	D3D11_MAPPED_SUBRESOURCE ms;
 	_ctx->Map(vbuf, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
 	memcpy(ms.pData, meshVertices.data(), sizeof(XMFLOAT3) * meshVertices.size());
 	_ctx->Unmap(vbuf, NULL);
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	printTime("buffer creation", diff);
+
 
 	ID3D11Buffer* uvBuf;
 	ZeroMemory(&bd, sizeof(bd));
@@ -133,11 +255,13 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	indexData.SysMemSlicePitch = 0;
 	ID3D11Buffer* indexBuffer;
 	res = _device->CreateBuffer(&ibd, &indexData, &indexBuffer);
-	_ctx->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
+
+
+	// Bind buffers, shaders and input layout
+	_ctx->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	_ctx->VSSetShader(vs, 0, 0);
 	_ctx->PSSetShader(ps, 0, 0);
-
 	_ctx->IASetInputLayout(inputLayout);
 	UINT stride = sizeof(XMFLOAT3);
 	UINT offset = 0;
@@ -230,7 +354,11 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	_ctx->RSSetState(rs);
 	// end RS
 
+
+	start = std::chrono::high_resolution_clock::now();
 	_ctx->DrawIndexed(indices.size(), 0, 0);
+	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	printTime("drawCall", diff);
 
 	// cleanup
 	rs->Release();

@@ -9,7 +9,7 @@ public:
 	Spacefight();
 	~Spacefight();
 	virtual void Init(Renderer& renderer); 
-	virtual void DoFrame(Renderer& renderer, FrameInput* input) override;
+	virtual void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) override;
 	virtual void ShutDown();
 
 private:
@@ -24,12 +24,15 @@ private:
 	Model* _simpleShipModel;
 	Model* _cardModel;
 	Model* _playTable;
+	Model* _basicHex;
 	ID3D11Texture2D* _shipTexture;
 	ID3D11Texture2D* _startButtonTex;
 	ID3D11Texture2D* _anjaniTex;
 	ID3D11Texture2D* _metalTex;
+	ID3D11Texture2D* _hexTex;
 
 
 	float _menuShipRot = 0;
 	float _sineUpDown = 0;
+	float _camMovZ = 0;
 };

@@ -13,6 +13,7 @@
 #include "resource_management.h"
 #include "input.h"
 #include <dinput.h>
+#include <chrono>
 
 #define MAX_LOADSTRING 100
 
@@ -188,10 +189,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	mesh.push_back({ -.5, -.5, 0 });
 	mesh.push_back({ .5, .5, 0 });
 	std::vector<XMFLOAT3> normals;
-	normals.push_back({ 0, 0, 1 });
-	normals.push_back({ 0, 0, 1 });
-	normals.push_back({ 0, 0, 1 });
-	normals.push_back({ 0, 0, 1 });
+	normals.push_back({ 0, 0, -1 });
+	normals.push_back({ 0, 0, -1 });
+	normals.push_back({ 0, 0, -1 });
+	normals.push_back({ 0, 0, -1 });
 	std::vector<XMFLOAT2> uvs;
 	uvs.push_back({ 1, 1 });
 	uvs.push_back({ 0, 0 });
@@ -240,8 +241,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Main message loop wrapping the game loop
 	////////////////////////////////////////////////
 	MSG msg;
-	while (true) { 
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) { 
+	UINT frameTime = 0;
+	auto start = std::chrono::high_resolution_clock::now();
+	while (true) {
+		start = std::chrono::high_resolution_clock::now();
+
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
@@ -250,7 +255,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		// gather the keyboard input
 		FrameInput frameInput;
-		HRESULT res = diKeyboard->GetDeviceState(sizeof(keyState), (void**) &keyState);
+		HRESULT res = diKeyboard->GetDeviceState(sizeof(keyState), (void**)&keyState);
 		if (FAILED(res)) {
 			diKeyboard->Acquire();
 		}
@@ -267,34 +272,53 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		frameInput.relMouseMovX = mouseState.lX;
 		frameInput.relMouseMovY = mouseState.lY;
-		
+
 		res = diMouse->GetDeviceData(sizeof(data), &data, &numElements, 0);
 		if (FAILED(res)) {
 			diMouse->Acquire();
 		}
 		switch (data.dwOfs) {
-			case DIMOFS_BUTTON0: 
-				if (data.dwData) {
-					frameInput.mouse1Down = true; break;
-				}
-				else {
-					frameInput.mouse1Up = true; break;
-				}
-			case DIMOFS_BUTTON1:
-				if (data.dwData) {
-					frameInput.mouse2Down = true; break;
-				}
-				else {
-					frameInput.mouse2Up = true; break;
-				}
+		case DIMOFS_BUTTON0:
+			if (data.dwData) {
+				frameInput.mouse1Down = true; break;
+			}
+			else {
+				frameInput.mouse1Up = true; break;
+			}
+		case DIMOFS_BUTTON1:
+			if (data.dwData) {
+				frameInput.mouse2Down = true; break;
+			}
+			else {
+				frameInput.mouse2Up = true; break;
+			}
 		}
 
-		
+
 
 		// end input gathering
 
-		game->DoFrame(*renderer, &frameInput);
+		game->DoFrame(*renderer, &frameInput, frameTime);
+
+		frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+
+		char buf[2000];
+		sprintf_s(buf, 2000, "============================frametime: %d\n", frameTime);
+		OutputDebugString(buf);
+
+
+		int timeToWait = 16 - frameTime;
+		if (timeToWait < 0) {
+			OutputDebugString("waittime longer than 16ms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+			timeToWait = 0;
+		}
 		
+		if (timeToWait > 0) {
+			sprintf_s(buf, 2000, "waitTime: %d\n", timeToWait);
+			OutputDebugString(buf);
+			Sleep(timeToWait);
+		}
+				
 	}
 
 	diKeyboard->Unacquire();

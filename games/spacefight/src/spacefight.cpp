@@ -8,6 +8,7 @@
 #include <dinput.h>
 #include "model.h"
 #include "primitives.h"
+#include <chrono>
 
 static Spacefight spacefight;
 
@@ -21,7 +22,7 @@ std::string GetIntroImageName() {
 
 
 
-void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
+void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
 
 	if (input->keyState[DIK_A]) {
 		OutputDebugString("A pressed!\n");
@@ -60,14 +61,52 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, 800, 600);
 	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
-	renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->normals, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
+	//renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->normals, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
 
-
+	// play table
 	XMMATRIX tableModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), 1.2);
 	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixScaling(2, 1, 2)));
 	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixTranslation(0, 0, -5)));
-	renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->normals, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
+	//renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->normals, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
 
+	// hex field
+	XMMATRIX hexModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), -0.8f);
+	
+	//hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, XMMatrixScaling(1.1f, 1.1f, 1.1f)));
+	
+	if (input->keyState[DIK_W]) {
+		_camMovZ += 0.002f * frameTime;
+	}
+
+	if (input->keyState[DIK_S]) {
+		_camMovZ -= 0.002f * frameTime;
+	}
+
+	XMFLOAT3 eyePos = XMFLOAT3(0, 10, -25 + (_camMovZ));
+	XMFLOAT3 eyeDir = XMFLOAT3(0, -0.25, 1);
+	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
+	_viewMat = DirectX::XMMatrixTranspose( XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
+	
+	auto start = std::chrono::high_resolution_clock::now();
+	float xOffset = 0;
+	for (int x = 0; x < 6; ++x) {
+		for (int y = 0; y < 6; ++y) {
+			if (y % 2 == 1) {
+				xOffset = 1.0f;
+			}
+			else {
+				xOffset = 0;
+			}
+			hexModelMat = XMMatrixIdentity();
+			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, XMMatrixTranslation((-5) + x * 1.8 + 1.4 + xOffset, 0, y*2 + 2)));
+			//renderer.renderMesh(_basicHex->positions, _basicHex->uvs, _basicHex->normals, _basicHex->indices, hexModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _hexTex);
+			renderer.renderModel(*_basicHex, hexModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _hexTex);
+		}
+	}
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	char buf[200];
+	sprintf_s(buf, 200, "hexfield rendertime: %d\n", diff);
+	OutputDebugString(buf);
 	
 	// Draw a start button
 	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
@@ -88,7 +127,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	std::vector<UINT> indices;
 	fillQuadVertexData(mesh, uvs, normals, indices);
 
-	renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
+	//renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
 
 	// RENDER TO TEXTURE
 	// Render the whole image to a texture from above and display it
@@ -99,15 +138,15 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	renderer.createRenderTargetViewForTexture(radarMapTex, &radarMapRTV);
 	renderer.createRenderTargetShaderResourceViewForTexture(radarMapTex, &radarMapSRV);
 	
-	XMFLOAT3 eyePos = XMFLOAT3(0, 75, 0);
-	XMFLOAT3 eyeDir = XMFLOAT3(0, -1, 0);
-	XMFLOAT3 upDir = XMFLOAT3(0, 0, 1);
+	eyePos = XMFLOAT3(0, 75, 0);
+	eyeDir = XMFLOAT3(0, -1, 0);
+	upDir = XMFLOAT3(0, 0, 1);
 	XMMATRIX mapView = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
 	renderer.setTextureRenderTarget(&radarMapRTV);
 	float clearColorsTex[] = { 0.01f, 0.02f, 0.8f, 1.0f };
 	renderer.clearTexture(clearColorsTex, radarMapRTV);
 	renderer.setViewport(0, 0, 400, 300);
-	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->normals, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
+	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->normals, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
 	
 
 	// After rendering the scene from birds eye view to our texture, 
@@ -118,7 +157,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	scaleMat = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
 	renderer.setViewport(0, 0, 800, 600);
-	renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
+	//renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
 
 	safeRelease(&radarMapSRV);
 	safeRelease(&radarMapRTV);
@@ -129,7 +168,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 
 }
 
-Spacefight::Spacefight() : clearColors{ 0.01f, 0.02f, 0.02f, 1.0f } {
+Spacefight::Spacefight() : clearColors{ 0.01f, 0.1f, 0.1f, 1.0f } {
 
 }
 
@@ -147,18 +186,21 @@ void Spacefight::Init(Renderer& renderer) {
 	_simpleShipModel = new Model();
 	_cardModel = new Model();
 	_playTable = new Model();
-	importModel("models/corvette1.obj", _shipModel);
-	importModel("games/spacefight/models/simple_ship1.obj", _simpleShipModel);
-	importModel("games/spacefight/models/card.obj", _cardModel);
-	importModel("games/spacefight/models/play_table.obj", _playTable);
+	_basicHex = new Model();
+	importModel("models/corvette1.obj", _shipModel, renderer);
+	importModel("games/spacefight/models/simple_ship1.obj", _simpleShipModel, renderer);
+	importModel("games/spacefight/models/card.obj", _cardModel, renderer);
+	importModel("games/spacefight/models/play_table.obj", _playTable, renderer);
+	importModel("games/spacefight/models/basic_hex.obj", _basicHex, renderer);
 	//loadTextureFromFile("games/spacefight/simple_ship_diff.png", &_shipTexture, &renderer);
 	loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &_shipTexture, &renderer);
 	loadTextureFromFile("games/spacefight/models/ajani_diff.png", &_anjaniTex, &renderer);
 	loadTextureFromFile("games/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
 	loadTextureFromFile("games/spacefight/textures/StainedMetal.jpg", &_metalTex, &renderer);
+	loadTextureFromFile("games/spacefight/textures/HexTexture.png", &_hexTex, &renderer);
 
-	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -25);
-	XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
+	XMFLOAT3 eyePos = XMFLOAT3(0, 10, -25);
+	XMFLOAT3 eyeDir = XMFLOAT3(0, -0.25, 1);
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
 	_modelMat = DirectX::XMMatrixScaling(5.1f, 5.1f, 5.1f);
 	_viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
@@ -235,11 +277,21 @@ void Spacefight::ShutDown() {
 	safeRelease(&_startButtonTex);
 	safeRelease(&_anjaniTex);
 	safeRelease(&_metalTex);
+	safeRelease(&_hexTex);
 	if (_cardModel) {
 		delete(_cardModel); _cardModel = nullptr;
 	}
 	if (_shipModel) {
 		delete(_shipModel); _shipModel = nullptr;
+	}
+	if (_basicHex) {
+		delete(_basicHex); _basicHex = nullptr;
+	}
+	if (_playTable) {
+		delete(_playTable); _playTable = nullptr;
+	}
+	if (_simpleShipModel) {
+		delete(_simpleShipModel); _simpleShipModel = nullptr;
 	}
 
 }

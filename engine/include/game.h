@@ -24,7 +24,7 @@ class Game {
 
 public:
 	virtual void Init(Renderer& renderer) = 0;
-	virtual void DoFrame(Renderer& renderer, FrameInput* input) = 0;
+	virtual void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) = 0;
 	virtual void ShutDown() = 0;
 
 };
