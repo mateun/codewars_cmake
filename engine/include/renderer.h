@@ -37,10 +37,7 @@ public:
 	void Renderer::setViewport(int x, int y, int w, int h);
 	void renderModel(const Model& model, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
 		ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, Texture& texture);
-	void renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<XMFLOAT3>& normals,
-							const std::vector<UINT>& indices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
-							ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout,
-							ID3D11Texture2D* tex);
+	
 	void createRenderTargetTexture(UINT w, UINT h, ID3D11Texture2D** tex);
 	void createRenderTargetViewForTexture(ID3D11Texture2D* tex, ID3D11RenderTargetView** rtv);
 	void createRenderTargetShaderResourceViewForTexture(ID3D11Texture2D* tex, ID3D11ShaderResourceView** srv);

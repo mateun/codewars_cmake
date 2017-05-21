@@ -4,6 +4,9 @@
 #include "input.h"
 #include "textures.h"
 
+constexpr unsigned int GAMEWIDTH = 1600;
+constexpr unsigned int GAMEHEIGHT = 900;
+
 class Spacefight : public Game {
 
 public:
@@ -26,11 +29,13 @@ private:
 	Model* _cardModel = nullptr;
 	Model* _playTable = nullptr;
 	Model* _basicHex = nullptr;
+	Model* _server = nullptr;
 	ID3D11Texture2D* _shipTexture = nullptr;
 	ID3D11Texture2D* _startButtonTex = nullptr;
 	ID3D11Texture2D* _anjaniTex = nullptr;
 	ID3D11Texture2D* _metalTex = nullptr;
 	Texture* _hexTex = nullptr;
+	Texture* _serverTex = nullptr;
 	
 
 	float _menuShipRot = 0;

@@ -23,6 +23,9 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
+constexpr UINT WIDTH = 1600;
+constexpr UINT HEIGHT = 900;
+
 // DINPUT
 LPDIRECTINPUT8 di = nullptr;
 LPDIRECTINPUTDEVICE8 diKeyboard = nullptr;
@@ -206,12 +209,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	indices.push_back(3);
 	indices.push_back(1);
 
-	renderer->setViewport(0, 0, 800, 600);
+	renderer->setViewport(0, 0, WIDTH, HEIGHT);
 	renderer->clearBackbuffer(clearColors);
-	renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
+	// TODO rewrite to model
+	//renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	
-	Sleep(2000);
+	Sleep(2);
 
 	// render loading screen
 	safeRelease(&tex);
@@ -219,9 +223,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	renderer->clearBackbuffer(clearColors);
 	modelMat = DirectX::XMMatrixScaling(1.8f, 1.8f, 1.8f);
 	projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
-	renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
+	// TODO rewrite to model
+	//renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
-	Sleep(3000);
+	Sleep(3);
 
 	// Init the game
 	Game* game = GetGame();
@@ -383,7 +388,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 					"codewars", 
 					WS_OVERLAPPEDWINDOW,
 					CW_USEDEFAULT, 0, 
-					800, 600, 
+					WIDTH, HEIGHT, 
 					nullptr, nullptr, 
 					hInstance, 
 					nullptr);
@@ -393,7 +398,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   renderer = new Renderer(800, 600, hWnd);
+   renderer = new Renderer(WIDTH, HEIGHT, hWnd);
    initDirectInput(hInst, hWnd);
 
    ShowWindow(hWnd, nCmdShow);
