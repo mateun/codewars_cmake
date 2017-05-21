@@ -98,9 +98,11 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 				xOffset = 0;
 			}
 			hexModelMat = XMMatrixIdentity();
-			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, XMMatrixTranslation((-5) + x * 1.8 + 1.4 + xOffset, 0, y*2 + 2)));
+			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, 
+				XMMatrixTranslation((-5) + x * 1.8 + 1.4 + xOffset, 0, y*2 + 2)));
 			//renderer.renderMesh(_basicHex->positions, _basicHex->uvs, _basicHex->normals, _basicHex->indices, hexModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _hexTex);
-			renderer.renderModel(*_basicHex, hexModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _hexTex);
+			renderer.renderModel(*_basicHex, hexModelMat, _viewMat, _projMat, 
+									_vs, _ps, _inputLayout, *_hexTex);
 		}
 	}
 	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -197,7 +199,8 @@ void Spacefight::Init(Renderer& renderer) {
 	loadTextureFromFile("games/spacefight/models/ajani_diff.png", &_anjaniTex, &renderer);
 	loadTextureFromFile("games/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
 	loadTextureFromFile("games/spacefight/textures/StainedMetal.jpg", &_metalTex, &renderer);
-	loadTextureFromFile("games/spacefight/textures/HexTexture.png", &_hexTex, &renderer);
+	//loadTextureFromFile("games/spacefight/textures/HexTexture.png", &_hexTex, &renderer);
+	_hexTex = new Texture("games/spacefight/textures/HexTexture.png", renderer);
 
 	XMFLOAT3 eyePos = XMFLOAT3(0, 10, -25);
 	XMFLOAT3 eyeDir = XMFLOAT3(0, -0.25, 1);
@@ -277,7 +280,12 @@ void Spacefight::ShutDown() {
 	safeRelease(&_startButtonTex);
 	safeRelease(&_anjaniTex);
 	safeRelease(&_metalTex);
-	safeRelease(&_hexTex);
+
+
+	if (_hexTex) {
+		delete(_hexTex); _hexTex = nullptr;
+	}
+
 	if (_cardModel) {
 		delete(_cardModel); _cardModel = nullptr;
 	}

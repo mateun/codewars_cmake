@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "textures.h"
+#include "resource_management.h"
+#include "renderer.h"
 
 HRESULT loadTextureFromFile(const std::string & fileName, ID3D11Texture2D ** textureTarget, Renderer * renderer) {
 	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(fileName.c_str(), 0);
@@ -60,4 +62,32 @@ HRESULT loadTextureFromFile(const std::string & fileName, ID3D11Texture2D ** tex
 	}
 	}*/
 	renderer->getContext()->Unmap(*textureTarget, 0);
+}
+
+
+Texture::Texture(const std::string& fileName, Renderer& renderer) {
+	loadTextureFromFile(fileName, &_tex, &renderer);
+
+	renderer.getDevice()->CreateShaderResourceView(_tex, NULL, &_srv);
+	renderer.getContext()->PSSetShaderResources(0, 1, &_srv);
+
+	D3D11_SAMPLER_DESC sd;
+	ZeroMemory(&sd, sizeof(sd));
+	sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sd.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	sd.MinLOD = 0;
+	sd.MaxLOD = D3D11_FLOAT32_MAX;
+
+	renderer.getDevice()->CreateSamplerState(&sd, &_ss);
+	renderer.getContext()->PSSetSamplers(0, 1, &_ss);
+
+}
+
+Texture::~Texture() {
+	safeRelease(&_ss);
+	safeRelease(&_srv);
+	safeRelease(&_tex);
 }

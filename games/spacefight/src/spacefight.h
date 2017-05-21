@@ -2,6 +2,7 @@
 #include "game.h"
 #include "model.h"
 #include "input.h"
+#include "textures.h"
 
 class Spacefight : public Game {
 
@@ -17,20 +18,20 @@ private:
 	XMMATRIX _modelMat;
 	XMMATRIX _viewMat;
 	XMMATRIX _projMat;
-	ID3D11VertexShader* _vs;
-	ID3D11PixelShader* _ps;
-	ID3D11InputLayout* _inputLayout;
-	Model* _shipModel;
-	Model* _simpleShipModel;
-	Model* _cardModel;
-	Model* _playTable;
-	Model* _basicHex;
-	ID3D11Texture2D* _shipTexture;
-	ID3D11Texture2D* _startButtonTex;
-	ID3D11Texture2D* _anjaniTex;
-	ID3D11Texture2D* _metalTex;
-	ID3D11Texture2D* _hexTex;
-
+	ID3D11VertexShader* _vs = nullptr;
+	ID3D11PixelShader* _ps = nullptr;
+	ID3D11InputLayout* _inputLayout = nullptr;
+	Model* _shipModel = nullptr;
+	Model* _simpleShipModel = nullptr;
+	Model* _cardModel = nullptr;
+	Model* _playTable = nullptr;
+	Model* _basicHex = nullptr;
+	ID3D11Texture2D* _shipTexture = nullptr;
+	ID3D11Texture2D* _startButtonTex = nullptr;
+	ID3D11Texture2D* _anjaniTex = nullptr;
+	ID3D11Texture2D* _metalTex = nullptr;
+	Texture* _hexTex = nullptr;
+	
 
 	float _menuShipRot = 0;
 	float _sineUpDown = 0;

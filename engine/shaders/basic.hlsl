@@ -39,22 +39,22 @@ SamplerState sampleType;
 
 float4 PShader(float4 position : SV_POSITION, float2 tex : TEXCOORD0, float3 normal : NORMAL, float3 light_dir : TEXCOORD1) : SV_TARGET
 {
-
 	float3 norm = normalize(normal);
 	float3 ldir = normalize(light_dir);
 	float n_dot_l = dot(light_dir, normal);
 
-	float4 outcol = shaderTexture.Sample(sampleType, tex);
-	float3 ambient = ambientcol.rgb * ambientcol.a * outcol.rgb;
+	float4 color = shaderTexture.Sample(sampleType, tex);
+	float3 ambient = ambientcol.rgb * ambientcol.a * color.rgb;
 	float3 diffuse = (float3) 0;
 	float4 light_col = float4(0.2, 0.5, 0.9, 1.0);
 	if (n_dot_l > 0) {
-		diffuse = light_col.rgb * light_col.a * n_dot_l * outcol.rgb;
+		diffuse = light_col.rgb * light_col.a * n_dot_l * color.rgb;
 	}
 
+	float4 outcol = (float4)0;
 	outcol.rgb = ambient + diffuse;
 	//outcol.rgb = float3(norm.x, norm.y, norm.z);
-	outcol.a = 1.0;
+	outcol.a = color.a;
 	return outcol;
 
 	//return float4(1, 0.2, 0.2, 1);

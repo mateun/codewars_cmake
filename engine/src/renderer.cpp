@@ -78,7 +78,7 @@ void printTime(const std::string& text, const std::chrono::microseconds& diff) {
 }
 
 void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
-	ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, ID3D11Texture2D* tex) {
+	ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, Texture& texture) {
 
 	
 	// Bind buffers, shaders and input layout
@@ -94,6 +94,7 @@ void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, cons
 	_ctx->IASetVertexBuffers(2, 1, &model.normalBuffer, &stride, &offset);
 
 	// Handle mvp matrices
+	auto start = std::chrono::high_resolution_clock::now();
 	D3D11_BUFFER_DESC mbd;
 	ZeroMemory(&mbd, sizeof(mbd));
 	mbd.Usage = D3D11_USAGE_DYNAMIC;
@@ -115,8 +116,11 @@ void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, cons
 	dataPtr->proj = projMatrix;
 	_ctx->Unmap(matrixBuffer, 0);
 	_ctx->VSSetConstantBuffers(0, 1, &matrixBuffer);
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	printTime("matrixBuffer in micros: ", diff);
 
 	// Handle lights
+	start = std::chrono::high_resolution_clock::now();
 	D3D11_BUFFER_DESC lbd;
 	ZeroMemory(&lbd, sizeof(lbd));
 	lbd.Usage = D3D11_USAGE_DYNAMIC;
@@ -136,33 +140,22 @@ void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, cons
 	dataPtrLight->ambientcol = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	_ctx->Unmap(lightBuffer, 0);
 	_ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
-
+	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	printTime("lightBuffer in micros: ", diff);
 
 	// Handle textures
-	ID3D11SamplerState* samplerState = nullptr;
-	ID3D11ShaderResourceView* srv = nullptr;
-	if (tex) {
-
-		_device->CreateShaderResourceView(tex, NULL, &srv);
-		_ctx->PSSetShaderResources(0, 1, &srv);
-
-		D3D11_SAMPLER_DESC sd;
-		ZeroMemory(&sd, sizeof(sd));
-		sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-		sd.ComparisonFunc = D3D11_COMPARISON_NEVER;
-		sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		sd.MinLOD = 0;
-		sd.MaxLOD = D3D11_FLOAT32_MAX;
-
-		_device->CreateSamplerState(&sd, &samplerState);
-		_ctx->PSSetSamplers(0, 1, &samplerState);
-	}
+	start = std::chrono::high_resolution_clock::now();
+	
+	_ctx->PSSetShaderResources(0, 1, texture.getSRV());
+	_ctx->PSSetSamplers(0, 1, texture.getSamplerState());
+	
+	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	printTime("textureSetup in micros: ", diff);
 
 	_ctx->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Setting wireframe RS
+	start = std::chrono::high_resolution_clock::now();
 	ID3D11RasterizerState* rs;
 	D3D11_RASTERIZER_DESC rd;
 	ZeroMemory(&rd, sizeof(rd));
@@ -175,17 +168,17 @@ void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, cons
 		exit(1);
 	}
 	_ctx->RSSetState(rs);
+	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	printTime("change RS in micros: ", diff);
 	// end RS
 
-	auto start = std::chrono::high_resolution_clock::now();
+	start = std::chrono::high_resolution_clock::now();
 	_ctx->DrawIndexed(model.indices.size(), 0, 0);
-	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
 	printTime("drawCall micros: ", diff);
 
 	// cleanup
 	safeRelease(&rs);
-	safeRelease(&samplerState);
-	safeRelease(&srv);
 	safeRelease(&lightBuffer);
 	safeRelease(&matrixBuffer);
 	
@@ -320,7 +313,7 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	ID3D11ShaderResourceView* srv = nullptr;
 	if (tex) {
 
-		_device->CreateShaderResourceView(tex, NULL, &srv);
+		
 		_ctx->PSSetShaderResources(0, 1, &srv);
 
 		D3D11_SAMPLER_DESC sd;
