@@ -47,9 +47,6 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	
 	_sineUpDown = sin(_menuShipRot)* 0.5f;
 	
-	char b[200];
-	sprintf_s(b, 200, "sine: %f\n", _sineUpDown);
-	OutputDebugString(b);
 	XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
 	XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
 	XMFLOAT3 xAxis = XMFLOAT3(1, 0, 0);
@@ -63,13 +60,13 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, 800, 600);
 	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
-	renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
+	renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->normals, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
 
 
 	XMMATRIX tableModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), 1.2);
 	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixScaling(2, 1, 2)));
 	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixTranslation(0, 0, -5)));
-	renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
+	renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->normals, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
 
 	
 	// Draw a start button
@@ -86,11 +83,12 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 
 	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
 	std::vector<XMFLOAT3> mesh;
+	std::vector<XMFLOAT3> normals;
 	std::vector<XMFLOAT2> uvs;
 	std::vector<UINT> indices;
-	fillQuadVertexData(mesh, uvs, indices);
+	fillQuadVertexData(mesh, uvs, normals, indices);
 
-	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
+	renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
 
 	// RENDER TO TEXTURE
 	// Render the whole image to a texture from above and display it
@@ -109,7 +107,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	float clearColorsTex[] = { 0.01f, 0.02f, 0.8f, 1.0f };
 	renderer.clearTexture(clearColorsTex, radarMapRTV);
 	renderer.setViewport(0, 0, 400, 300);
-	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
+	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->normals, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
 	
 
 	// After rendering the scene from birds eye view to our texture, 
@@ -120,7 +118,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input) {
 	scaleMat = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
 	renderer.setViewport(0, 0, 800, 600);
-	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
+	renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
 
 	safeRelease(&radarMapSRV);
 	safeRelease(&radarMapRTV);
@@ -213,9 +211,10 @@ void Spacefight::Init(Renderer& renderer) {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		//{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },	// same slot, but 12 bytes after the pos
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },		// other slot (buffer), starting at 0
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },		// other slot (buffer), starting at 0
 
 	};
-	res = const_cast<ID3D11Device*>(renderer.getDevice())->CreateInputLayout(ied, 2, vs->GetBufferPointer(), vs->GetBufferSize(), &_inputLayout);
+	res = const_cast<ID3D11Device*>(renderer.getDevice())->CreateInputLayout(ied, 3, vs->GetBufferPointer(), vs->GetBufferSize(), &_inputLayout);
 	if (FAILED(res)) {
 		OutputDebugStringW(L"Failed to create input layout\n");
 		exit(1);

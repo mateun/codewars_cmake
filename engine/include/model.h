@@ -7,6 +7,7 @@ using namespace DirectX;
 
 struct Model {
 	std::vector<XMFLOAT3> positions;
+	std::vector<XMFLOAT3> normals;
 	std::vector<XMFLOAT2> uvs;
 	std::vector<unsigned int> indices;
 };

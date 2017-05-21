@@ -18,6 +18,11 @@ struct MatrixBufferType {
 	XMMATRIX proj;
 };
 
+struct LightBufferType {
+	XMFLOAT4 ambientcol;
+	
+};
+
 
 class Renderer {
 
@@ -28,7 +33,8 @@ public:
 	void clearBackbuffer(float *colors);
 	void presentBackBuffer();
 	void Renderer::setViewport(int x, int y, int w, int h);
-	void renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<UINT>& indices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
+	void renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<XMFLOAT3>& normals,
+							const std::vector<UINT>& indices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
 							ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout,
 							ID3D11Texture2D* tex);
 	void createRenderTargetTexture(UINT w, UINT h, ID3D11Texture2D** tex);

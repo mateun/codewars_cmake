@@ -156,10 +156,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		//{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },	// same slot, but 12 bytes after the pos
 		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },		// other slot (buffer), starting at 0
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }		// other slot (buffer), starting at 0
 
 	};
 	ID3D11InputLayout* inputLayout;
-	const_cast<ID3D11Device*>(renderer->getDevice())->CreateInputLayout(ied, 2, vs->GetBufferPointer(), vs->GetBufferSize(), &inputLayout);
+	res = const_cast<ID3D11Device*>(renderer->getDevice())->CreateInputLayout(ied, 3, vs->GetBufferPointer(), vs->GetBufferSize(), &inputLayout);
+	if (FAILED(res)) {
+		OutputDebugString("input layout in main failed\n");
+		exit(1);
+	}
 	/// END INPUT LAYOUT SETUP
 
 	// RenderSplash
@@ -182,6 +187,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	mesh.push_back({ .5, -.5, 0 });
 	mesh.push_back({ -.5, -.5, 0 });
 	mesh.push_back({ .5, .5, 0 });
+	std::vector<XMFLOAT3> normals;
+	normals.push_back({ 0, 0, 1 });
+	normals.push_back({ 0, 0, 1 });
+	normals.push_back({ 0, 0, 1 });
+	normals.push_back({ 0, 0, 1 });
 	std::vector<XMFLOAT2> uvs;
 	uvs.push_back({ 1, 1 });
 	uvs.push_back({ 0, 0 });
@@ -197,7 +207,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	renderer->setViewport(0, 0, 800, 600);
 	renderer->clearBackbuffer(clearColors);
-	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
+	renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	
 	Sleep(2000);
@@ -208,7 +218,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	renderer->clearBackbuffer(clearColors);
 	modelMat = DirectX::XMMatrixScaling(1.8f, 1.8f, 1.8f);
 	projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
-	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
+	renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	Sleep(3000);
 

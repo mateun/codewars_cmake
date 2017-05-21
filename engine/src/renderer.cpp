@@ -70,7 +70,9 @@ void Renderer::render() {
 }
 
 
-void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<UINT>& indices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
+void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<XMFLOAT3>& normals,
+	const std::vector<UINT>& indices, 
+	const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
 	ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, ID3D11Texture2D* tex) {
 	ID3D11Buffer* vbuf;
 	meshVertices.at(0);
@@ -99,6 +101,23 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	uvData.SysMemPitch = 0;
 	uvData.SysMemSlicePitch = 0;
 	_device->CreateBuffer(&bd, &uvData, &uvBuf);
+
+
+	ID3D11Buffer* normalBuf;
+	ZeroMemory(&bd, sizeof(bd));
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(XMFLOAT3) * normals.size();
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	D3D11_SUBRESOURCE_DATA normalsData;
+	normalsData.pSysMem = normals.data();
+	normalsData.SysMemPitch = 0;
+	normalsData.SysMemSlicePitch = 0;
+	HRESULT res = _device->CreateBuffer(&bd, &normalsData, &normalBuf);
+	if (FAILED(res)) {
+		OutputDebugString("normal buffer creation failed\n");
+		exit(1);
+	}
+
 	
 	// Indices
 	//unsigned int indices[] = { 0, 1, 2, 0, 3, 1 };
@@ -113,7 +132,7 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	indexData.SysMemPitch = 0;
 	indexData.SysMemSlicePitch = 0;
 	ID3D11Buffer* indexBuffer;
-	HRESULT res = _device->CreateBuffer(&ibd, &indexData, &indexBuffer);
+	res = _device->CreateBuffer(&ibd, &indexData, &indexBuffer);
 	_ctx->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	_ctx->VSSetShader(vs, 0, 0);
@@ -125,6 +144,7 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	_ctx->IASetVertexBuffers(0, 1, &vbuf, &stride, &offset);
 	UINT uvstride = sizeof(XMFLOAT2);
 	_ctx->IASetVertexBuffers(1, 1, &uvBuf, &uvstride, &offset);
+	_ctx->IASetVertexBuffers(2, 1, &normalBuf, &stride, &offset);
 
 	// Handle mvp matrices
 	D3D11_BUFFER_DESC mbd;
@@ -148,6 +168,28 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	dataPtr->proj = projMatrix;
 	_ctx->Unmap(matrixBuffer, 0);
 	_ctx->VSSetConstantBuffers(0, 1, &matrixBuffer);
+
+	// Handle lights
+	D3D11_BUFFER_DESC lbd;
+	ZeroMemory(&lbd, sizeof(lbd));
+	lbd.Usage = D3D11_USAGE_DYNAMIC;
+	lbd.ByteWidth = sizeof(LightBufferType);
+	lbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	lbd.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+	ID3D11Buffer* lightBuffer;
+	res = _device->CreateBuffer(&lbd, nullptr, &lightBuffer);
+	if (FAILED(res)) {
+		OutputDebugStringW(L"light constant buffer creation failed\n");
+		exit(1);
+	}
+	
+	LightBufferType* dataPtrLight;
+	res = _ctx->Map(lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &bufSR);
+	dataPtrLight = (LightBufferType*)bufSR.pData;
+	dataPtrLight->ambientcol = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	_ctx->Unmap(lightBuffer, 0);
+	_ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
+
 
 	// Handle textures
 	ID3D11SamplerState* samplerState = nullptr;
@@ -195,10 +237,13 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	if (samplerState) samplerState->Release();
 	if (srv) srv->Release();
 	
+	lightBuffer->Release();
 	matrixBuffer->Release();
 	indexBuffer->Release();
+	normalBuf->Release();
 	uvBuf->Release();
 	vbuf->Release();
+	
 }
 
 void Renderer::setTextureRenderTarget(ID3D11RenderTargetView** rtv) {
@@ -280,7 +325,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	scdesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	
 	scdesc.OutputWindow = hWnd;
-	scdesc.SampleDesc.Count = 8;	// 1 sample per pixel
+	scdesc.SampleDesc.Count = 2;	// samples per pixel
 	scdesc.SampleDesc.Quality = 0;
 	scdesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scdesc.Flags = 0;
@@ -334,7 +379,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	td.MipLevels = 1;
 	td.ArraySize = 1;
 	td.Format = DXGI_FORMAT_D32_FLOAT;
-	td.SampleDesc.Count = 8;
+	td.SampleDesc.Count = 2;
 	td.SampleDesc.Quality = 0;
 	td.Usage = D3D11_USAGE_DEFAULT;
 	td.BindFlags = D3D11_BIND_DEPTH_STENCIL;
