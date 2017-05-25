@@ -14,6 +14,8 @@
 #include "input.h"
 #include <dinput.h>
 #include <chrono>
+#include <py_embed.h>
+
 
 #define MAX_LOADSTRING 100
 
@@ -241,6 +243,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	float rotZ = 0.0f;
 	
 	#pragma endregion
+
+	////////////////////////////
+	/// Python stuff
+	////////////////////////////
+	callPyFunc();
+
+
+	/// end python stuff
+	////////////////////////////
 
 	////////////////////////////////////////////////
 	// Main message loop wrapping the game loop

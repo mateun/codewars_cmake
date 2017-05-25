@@ -69,10 +69,8 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixTranslation(0, 0, -5)));
 	//renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->normals, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
 
-	// hex field
+	// Draw the hex field
 	XMMATRIX hexModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), -0.8f);
-	
-	//hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, XMMatrixScaling(1.1f, 1.1f, 1.1f)));
 	
 	if (input->keyState[DIK_W]) {
 		_camMovZ += 0.02f * frameTime;
