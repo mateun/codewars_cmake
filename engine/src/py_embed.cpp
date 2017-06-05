@@ -6,28 +6,17 @@ static PyObject *pArgs, *pValue;
 
 void callPyFunc() {
 	
-	//Py_SetProgramName(L"TESTPYTHON");
+	// We add our module to the system modules.
+	// Call this before Py_Initialize().
 	int res = PyImport_AppendInittab("codewars", &PyInit_emb);
 	Py_Initialize();
-	
-	//PySys_SetPath(L"C:/Users/martin/Documents/Projects/C++/codewars/build/win32_dist/x86-Debug/Debug");
 	PySys_SetPath(L"./py_scripts");
-	//PyObject* sysPath = PySys_GetObject("path");
-	//PyList_Append(sysPath, PyUnicode_FromString("."));
+	
+	// This is the name of our python script.
 	pName = PyUnicode_DecodeFSDefault("testprog");
-	try {
-		pModule = PyImport_Import(pName);
-	} catch (...) {
-		PyObject *ptype, *pvalue, *ptraceback;
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-		//pvalue contains error message
-		//ptraceback contains stack snapshot and many other information
-		//(see python traceback structure)
 
-		//Get error message
-		//char *pStrErrorMessage = PyBytes_FromString(pvalue);
-		
-	}
+	pModule = PyImport_Import(pName);
+	
 	Py_DECREF(pName);
 
 	if (pModule == nullptr) {
@@ -62,6 +51,10 @@ PyModuleDef EmbModule = {
 
 PyObject* PyInit_emb(void) {
 	try {
+		// BEWARE: I received an exception when linking to release 
+		// Python lib & dll. 
+		// When in debug mode, it seems to be important to link to 
+		// debug python lib & dll. 
 		PyObject* m = PyModule_Create(&EmbModule);
 		if (m) {
 			OutputDebugString("loaded python module\n");

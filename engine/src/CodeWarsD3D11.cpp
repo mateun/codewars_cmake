@@ -2,6 +2,8 @@
 //
 
 #include "stdafx.h"
+#include <io.h>
+#include <fcntl.h>
 #include "CodeWarsD3D11.h"
 #include "renderer.h"
 #include <d3dcompiler.h>
@@ -15,6 +17,7 @@
 #include <dinput.h>
 #include <chrono>
 #include <py_embed.h>
+#include <iostream>
 
 
 #define MAX_LOADSTRING 100
@@ -90,7 +93,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// TODO: Place code here.
+	AllocConsole();
 
+	HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
+	int hCrt = _open_osfhandle((long)handle_out, _O_TEXT);
+	FILE* hf_out = _fdopen(hCrt, "w");
+	setvbuf(hf_out, NULL, _IONBF, 0);
+	
+
+	HANDLE handle_in = GetStdHandle(STD_INPUT_HANDLE);
+	hCrt = _open_osfhandle((long)handle_in, _O_TEXT);
+	FILE* hf_in = _fdopen(hCrt, "r");
+	setvbuf(hf_in, NULL, _IONBF, 0);
+	*stdin = *hf_in;
+
+	std::cout << "hi there" << std::endl;
+	fprintf(hf_out, "hello world\n");
+	
 	// Initialize global strings
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 	LoadStringW(hInstance, IDC_CODEWARSD3D11, szWindowClass, MAX_LOADSTRING);
