@@ -1,50 +1,150 @@
 #include <stdafx.h>
-#include "codewars.h"
-#include "model_import.h"
-#include "textures.h"
-#include "shaders.h"
+#include "spacefight.h"
+#include <model_import.h>
+#include <textures.h>
+#include <shaders.h>
 #include <d3dcompiler.h>
 #include <resource_management.h>
 #include <dinput.h>
 #include "model.h"
-#include "primitives.h"
+#include <primitives.h>
 #include <chrono>
+#include <py_embed.h>
+#include <consoleprint.h>
 
-static CodeWars spacefight;
+// Python stuff
+
+PyObject* spacefight_getHealth(PyObject* self, PyObject* args) {
+#ifdef _DEBUG
+	OutputDebugString("spacefight called\n");	
+#endif
+	int playerNr = 0;
+	int playerHealth = 100;
+	if (!PyArg_ParseTuple(args, "i", &playerNr)) {
+		return nullptr;
+	}
+
+	// TODO make fake impl real
+	// e.g. lookup health for player somewhere
+	return PyLong_FromLong(playerHealth);
+}
+
+PyObject* spacefight_spawnGameObject(PyObject* self, PyObject* args) {
+#ifdef _DEBUG
+	OutputDebugString("spacefight.drawModel called\n");
+#endif
+
+	char* goName;
+	if (!PyArg_ParseTuple(args, "s", &goName)) {
+		return nullptr;
+	}
+
+
+	return PyLong_FromVoidPtr(nullptr);
+}
+
+PyObject* spacefight_drawModel(PyObject* self, PyObject* args) {
+#ifdef _DEBUG
+	OutputDebugString("spacefight.drawModel called\n");
+#endif
+	
+	return PyLong_FromVoidPtr(nullptr);
+}
+
+PyMethodDef SpacefightMethods[] = {
+	{ "get_player_health", spacefight_getHealth, METH_VARARGS,
+	"Return the current health value of the player given by its number." },
+	{ "draw_model", spacefight_drawModel, METH_VARARGS,
+	"Draw a model." },
+	{ "spawn_game_object", spacefight_spawnGameObject, METH_VARARGS,
+	"Spawn a new game object." },
+	{ NULL, NULL, 0, NULL }
+};
+
+PyModuleDef SpacefightModule = {
+	PyModuleDef_HEAD_INIT, "spacefight", NULL, -1, SpacefightMethods,
+	//NULL, NULL, NULL, NULL
+};
+
+PyObject* PyInit_Spacefight(void) {
+	try {
+		// BEWARE: I received an exception when linking to release 
+		// Python lib & dll. 
+		// When in debug mode, it seems to be important to link to 
+		// debug python lib & dll. 
+		PyObject* m = PyModule_Create(&SpacefightModule);
+		if (m) {
+			OutputDebugString("loaded python module\n");
+			return m;
+		}
+	}
+	catch (...) {
+		OutputDebugString("caught exception while calling PyModuleCreate\n");
+	}
+}
+
+
+
+// end python stuff
+
+static Spacefight spacefight;
 
 Game* GetGame() {
 	return &spacefight;
 }
 
-std::string GetIntroImageName() {
-	//return "games/spacefight/textures/spacefight_intro.png";
-	return "";
+std::string Spacefight::GetIntroImageName() {
+	return "games/assets/spacefight/textures/spacefight_intro.png";
+}
+
+void Spacefight::DoPythonFrame() {
+	// TODO
+}
+
+bool Spacefight::InitPythonEnv() {
+	// We add our module to the system modules.
+	// Call this before Py_Initialize().
+	int res = PyImport_AppendInittab("spacefight", &PyInit_Spacefight);
+
+	Py_Initialize();
+	// Where to look for our scripts
+	PySys_SetPath(L"./games/assets/spacefight/py_scripts");
+	// This is the name of our python script.
+	pName = PyUnicode_DecodeFSDefault("gamelogic");
+
+	pModule = PyImport_Import(pName);
+	pFunc = PyObject_GetAttrString(pModule, "doFrame");
+	pFuncOnFirePressed = PyObject_GetAttrString(pModule, "onFirePressed");
+	
+	pArgs = PyTuple_New(1);
+	pValue = PyLong_FromLong(1);
+	PyTuple_SetItem(pArgs, 0, pValue);
+	
+	
+	return true;
 }
 
 
-
-void CodeWars::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
-
-	if (input->keyState[DIK_A]) {
-		OutputDebugStringA("A pressed!\n");
-	}
-
-	if (input->mouse1Down) OutputDebugStringA("mousebutton1 pressed!\n");
-	if (input->mouse1Up) OutputDebugStringA("mousebutton1 up\n");
-
-	if (input->mouse2Down) OutputDebugStringA("mousebutton2 pressed!\n");
-	if (input->mouse2Up) OutputDebugStringA("mousebutton2 up\n");
-
+void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
+	// Python call
+	auto start = std::chrono::high_resolution_clock::now();
 	
-		// track the movement
-	if (input->relMouseMovX != 0) {
-		char buf[500];
-		sprintf_s(buf, 500, "mouse X__: %d\n", input->relMouseMovX);
-		OutputDebugStringA(buf);
-	}
+	//pArgs = PyTuple_New(1);
+	pValue = PyLong_FromLong(1);
+	PyTuple_SetItem(pArgs, 0, pValue);
+
+	PyObject* retval = PyObject_CallObject(pFunc, pArgs);
+	long val = PyLong_AsLong(retval);
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+
+	retval = PyObject_CallObject(pFuncOnFirePressed, nullptr);
+	val = PyLong_AsLong(retval);
+
+	cwprintf("time for python call (micros): %d\n", diff);
 	
+	// End python frame stuff
 	
-	_menuShipRot += 0.0007f;
+	_menuShipRot += 0.007f;
 	_modelMat = XMMatrixIdentity();
 	
 	_sineUpDown = sin(_menuShipRot)* 0.5f;
@@ -53,40 +153,23 @@ void CodeWars::DoFrame(Renderer& renderer, FrameInput* input, long long frameTim
 	XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
 	XMFLOAT3 xAxis = XMFLOAT3(1, 0, 0);
 	XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), _menuShipRot*4.0f);
-	XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), _menuShipRot*0.0f);
+	XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), _menuShipRot*0.5f);
 	XMMATRIX transZ = DirectX::XMMatrixTranslation(0, 0, _sineUpDown - 10.0f);
 	//_modelMat = XMMatrixMultiply(_modelMat, rotMatZ);
 	_modelMat = XMMatrixMultiply(_modelMat, rotMatY);
-	_modelMat = XMMatrixTranspose(XMMatrixMultiply(_modelMat, transZ));
+	//_modelMat = XMMatrixTranspose(XMMatrixMultiply(_modelMat, transZ));
 
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, GAMEWIDTH, GAMEHEIGHT);
 	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
 	//renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->normals, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
 
-	// play table
-	XMMATRIX tableModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), 1.2f);
-	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixScaling(2.0f, 1.0f, 2.0f)));
-	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixTranslation(0, 0, -5)));
-	//renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->normals, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
-
-	// Draw the hex field
-	XMMATRIX hexModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), -0.8f);
 	
-	if (input->keyState[DIK_W]) {
-		_camMovZ += 0.02f * frameTime;
-	}
-
-	if (input->keyState[DIK_S]) {
-		_camMovZ -= 0.02f * frameTime;
-	}
-
-	XMFLOAT3 eyePos = XMFLOAT3(15, 60, -35 + (_camMovZ));
-	XMFLOAT3 focusPos = XMFLOAT3(0, 0, 0 + (_camMovZ));
+	XMFLOAT3 eyePos = XMFLOAT3(0, 40, -25);
+	XMFLOAT3 focusPos = XMFLOAT3(0, 0, 0);
 	XMVECTOR eyeDirection = XMVectorSubtract(XMLoadFloat3(&focusPos), XMLoadFloat3(&eyePos));
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
-	//_viewMat = DirectX::XMMatrixTranspose( XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
-
+	
 	// recalc the view matrix
 	// r always points to the right, regardless of our pitch.
 	XMFLOAT3 r = XMFLOAT3(1, 0, 0);
@@ -98,39 +181,17 @@ void CodeWars::DoFrame(Renderer& renderer, FrameInput* input, long long frameTim
 	XMVECTOR eyedir_rotated = XMVector3Rotate(XMLoadFloat3(&f0), ry);
 	XMVECTOR u = XMVector3Cross(eyedir_rotated, XMLoadFloat3(&r));
 
-	
 	_viewMat = DirectX::XMMatrixTranspose(XMMatrixLookAtLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&focusPos), u));
 	
-	auto start = std::chrono::high_resolution_clock::now();
-	float xOffset = 0;
-	for (int x = 0; x < 10; ++x) {
-		for (int y = 0; y < 10; ++y) {
-			if (y % 2 == 1) {
-				xOffset = 1.0f;
-			}
-			else {
-				xOffset = 0;
-			}
-			hexModelMat = XMMatrixIdentity();
-			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, XMMatrixScaling(1, 3.0, 1)));
-			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, 
-				XMMatrixTranslation((-9) + x * 1.8 + 1.4 + xOffset, 0, y*1.7 + 2)));
-			renderer.renderModel(*_basicHex, hexModelMat, _viewMat, _projMat, 
-								_vs, _ps, _inputLayout, *_hexTex);
-		}
-	}
-	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
-	//char buf[200];
-	//sprintf_s(buf, 200, "hexfield rendertime: %d\n", diff);
-	//OutputDebugString(buf);
-
 	// Draw a server
 	XMMATRIX serverModelMat = XMMatrixIdentity();
 	serverModelMat = XMMatrixTranspose(XMMatrixMultiply(serverModelMat, XMMatrixScaling(0.4f, 0.4f, 0.4f)));
 	serverModelMat = XMMatrixTranspose(XMMatrixMultiply(serverModelMat,
 		XMMatrixTranslation((1.75f), 0.35f, 6.1f)));
 
-	renderer.renderModel(*_server, serverModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, *_serverTex);
+	//renderer.renderModel(*_server, serverModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, *_serverTex);
+
+	renderer.renderModel(*_shipModel, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, *_shipTex);
 	
 	// Draw a start button
 	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
@@ -144,7 +205,7 @@ void CodeWars::DoFrame(Renderer& renderer, FrameInput* input, long long frameTim
 	XMMATRIX viewMatS = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePosS), XMLoadFloat3(&eyeDirS), XMLoadFloat3(&upDirS)));
 	XMMATRIX projMatSplash = XMMatrixTranspose(XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f));
 
-	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
+	float clearColors[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	std::vector<XMFLOAT3> mesh;
 	std::vector<XMFLOAT3> normals;
 	std::vector<XMFLOAT2> uvs;
@@ -167,7 +228,7 @@ void CodeWars::DoFrame(Renderer& renderer, FrameInput* input, long long frameTim
 	upDir = XMFLOAT3(0, 0, 1);
 	XMMATRIX mapView = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
 	renderer.setTextureRenderTarget(&radarMapRTV);
-	float clearColorsTex[] = { 0.01f, 0.02f, 0.8f, 1.0f };
+	float clearColorsTex[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	renderer.clearTexture(clearColorsTex, radarMapRTV);
 	renderer.setViewport(0, 0, 400, 300);
 	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->normals, _shipModel->indices, _modelMat, mapView, _projMat, _vs, _ps, _inputLayout, _shipTexture);
@@ -192,16 +253,16 @@ void CodeWars::DoFrame(Renderer& renderer, FrameInput* input, long long frameTim
 
 }
 
-CodeWars::CodeWars() : clearColors{ 0.01f, 0.1f, 0.1f, 1.0f } {
+Spacefight::Spacefight() : clearColors{ 0.0f, 0.0f, 0.0f, 1.0f } {
 
 }
 
-CodeWars::~CodeWars() {
+Spacefight::~Spacefight() {
 	ShutDown();
 }
 
-void CodeWars::Init(Renderer& renderer) {
-	
+void Spacefight::Init(Renderer& renderer) {
+	InitPythonEnv();
 	
 	// Import assets
 	_shipModel = new Model();
@@ -210,20 +271,21 @@ void CodeWars::Init(Renderer& renderer) {
 	_playTable = new Model();
 	_basicHex = new Model();
 	_server = new Model();
-	importModel("models/corvette1.obj", _shipModel, renderer);
-	importModel("games/spacefight/models/simple_ship1.obj", _simpleShipModel, renderer);
-	importModel("games/spacefight/models/card.obj", _cardModel, renderer);
-	importModel("games/spacefight/models/play_table.obj", _playTable, renderer);
-	importModel("games/spacefight/models/basic_hex.obj", _basicHex, renderer);
-	importModel("games/spacefight/models/server.obj", _server, renderer);
+	importModel("games/assets/spacefight/models/corvette1.obj", _shipModel, renderer);
+	importModel("games/assets/spacefight/models/simple_ship1.obj", _simpleShipModel, renderer);
+	importModel("games/assets/spacefight/models/card.obj", _cardModel, renderer);
+	importModel("games/assets/spacefight/models/play_table.obj", _playTable, renderer);
+	importModel("games/assets/spacefight/models/basic_hex.obj", _basicHex, renderer);
+	importModel("games/assets/spacefight/models/server.obj", _server, renderer);
 
-	loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &_shipTexture, &renderer);
-	loadTextureFromFile("games/spacefight/models/ajani_diff.png", &_anjaniTex, &renderer);
-	loadTextureFromFile("games/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
-	loadTextureFromFile("games/spacefight/textures/StainedMetal.jpg", &_metalTex, &renderer);
+	//loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &_shipTexture, &renderer);
+	loadTextureFromFile("games/assets/spacefight/models/ajani_diff.png", &_anjaniTex, &renderer);
+	loadTextureFromFile("games/assets/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
+	loadTextureFromFile("games/assets/spacefight/textures/StainedMetal.jpg", &_metalTex, &renderer);
 	
-	_hexTex = new Texture("games/spacefight/textures/HexTexture.png", renderer);
-	_serverTex = new Texture("games/spacefight/textures/sdiff.png", renderer);
+	_hexTex = new Texture("games/assets/spacefight/textures/HexTexture.png", renderer);
+	_serverTex = new Texture("games/assets/spacefight/textures/sdiff.png", renderer);
+	_shipTex = new Texture("games/assets/spacefight/textures/SF_Corvette-F3_diffuse.jpg", renderer);
 
 	// Setup basic world, view and projection matrices
 	XMFLOAT3 eyePos = XMFLOAT3(0, 10, -25);
@@ -239,9 +301,9 @@ void CodeWars::Init(Renderer& renderer) {
 	/// SHADER SETUP
 	ID3DBlob* vs = nullptr;
 	ID3DBlob* errBlob = nullptr;
-	HRESULT res = D3DCompileFromFile(L"shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
+	HRESULT res = D3DCompileFromFile(L"games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
 	if (FAILED(res)) {
-		OutputDebugStringW(L"shader load failed\n");
+		OutputDebugStringW(L"vshader load failed\n");
 		if (errBlob)
 		{
 			OutputDebugStringA((char*)errBlob->GetBufferPointer());
@@ -254,9 +316,9 @@ void CodeWars::Init(Renderer& renderer) {
 		exit(1);
 	}
 	ID3DBlob* ps = nullptr;
-	res = D3DCompileFromFile(L"shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
+	res = D3DCompileFromFile(L"games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
 	if (FAILED(res)) {
-		OutputDebugStringW(L"shader load failed\n");
+		OutputDebugStringW(L"pshader load failed\n");
 		if (errBlob)
 		{
 			OutputDebugStringA((char*)errBlob->GetBufferPointer());
@@ -294,7 +356,7 @@ void CodeWars::Init(Renderer& renderer) {
 	
 }
 
-void CodeWars::ShutDown() {
+void Spacefight::ShutDown() {
 	safeRelease(&_vs);
 	safeRelease(&_ps);
 	safeRelease(&_shipTexture);
@@ -306,6 +368,10 @@ void CodeWars::ShutDown() {
 
 	if (_hexTex) {
 		delete(_hexTex); _hexTex = nullptr;
+	}
+
+	if (_shipTex) {
+		delete(_shipTex); _shipTex = nullptr;
 	}
 
 	if (_cardModel) {
@@ -330,4 +396,8 @@ void CodeWars::ShutDown() {
 	if (_serverTex) {
 		delete(_serverTex); _serverTex = nullptr;
 	}
+
+	// Python cleanup
+	Py_FinalizeEx();
+
 }

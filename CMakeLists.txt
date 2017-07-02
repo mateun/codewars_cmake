@@ -11,7 +11,7 @@ set(PYTHON_LIB c:/Python36-32/libs)
 set(PYTHON_DLL c:/Python36-32)
 
 
-include_directories(engine/include games/spacefight/include)
+include_directories(engine/include)
 include_directories(${FREEIMAGE_INCLUDE})
 include_directories(${ASSIMP_INCLUDE})
 include_directories(C:/Program Files (x86)/Windows Kits/10/Include/10.0.10240.0/ucrt)
@@ -21,7 +21,8 @@ include_directories(C:/Python36-32/include)
 #link_directories(${PYTHON_LIB} ${ASSIMP_LIB} ${FREEIMAGE_LIB} )
 
 file(GLOB engine_sources engine/src/*.cpp)
-file(GLOB game_sources games/spacefight/src/*.cpp)
+#file(GLOB game_sources games/src/spacefight/src/*.cpp)
+file(GLOB game_sources games/src/**/src/*.cpp)
 
 
 add_executable(engine_main WIN32 ${engine_sources} ${game_sources})
@@ -58,39 +59,14 @@ add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build even
         "${FREEIMAGE_LIB}/FreeImage.dll"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>)  
 
-add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
-    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
-        "${PROJECT_SOURCE_DIR}/engine/shaders"      # <--this is in-file
-        $<TARGET_FILE_DIR:engine_main>/shaders)  
-
-add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+		add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
         "${PROJECT_SOURCE_DIR}/engine/textures"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>/textures)  
 
 add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
-        "${PROJECT_SOURCE_DIR}/engine/models"      # <--this is in-file
-        $<TARGET_FILE_DIR:engine_main>/models) 
-		
-add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
-    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
-        "${PROJECT_SOURCE_DIR}/games/spacefight/models"      # <--this is in-file
-        $<TARGET_FILE_DIR:engine_main>/games/spacefight/models)  
-
-add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
-    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
-        "${PROJECT_SOURCE_DIR}/games/spacefight/textures"      # <--this is in-file
-        $<TARGET_FILE_DIR:engine_main>/games/spacefight/textures)  
-
-add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
-    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
-        "${PROJECT_SOURCE_DIR}/games/spacefight/sound"      # <--this is in-file
-        $<TARGET_FILE_DIR:engine_main>/games/spacefight/sound)  
-
-add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
-    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
-        "${PROJECT_SOURCE_DIR}/games"      # <--this is in-file
-        $<TARGET_FILE_DIR:engine_main>/games)  
+        "${PROJECT_SOURCE_DIR}/games/assets"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>/games/assets)  
 
 # TODO add copying of shader/model/texture resources

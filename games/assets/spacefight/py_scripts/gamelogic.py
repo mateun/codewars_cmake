@@ -34,7 +34,7 @@ def doFrame(a):
 	#h = 100
 	
 	spacefight.draw_model()
-	spacefight.spawn_game_object("mygo_hero")
+	spacefight.spawn_game_object("mygo_hero2")
 		
 	return a + 99 + h + (c.f()) + s.go() + gv
 	
