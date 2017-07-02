@@ -47,3 +47,10 @@ def doFrame():
 
 def initGameModule():
 ```
+
+`doFrame` is called, as the name suggests, every frame by the engine. Within this method, you should 
+update your game logic. 
+
+`initGameModule` is only called once, when the module is first loaded. The idea is that 
+you do one-time initialization things here, e.g. loading 3D models for later use in game objects, 
+giving useful starting values to variables etc.
