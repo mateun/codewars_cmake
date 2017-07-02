@@ -2,6 +2,7 @@
 #include "renderer.h"
 #include <string>
 #include <input.h>
+#include <py_embed.h>
 
 
 /**
@@ -53,4 +54,23 @@ public:
 
 Game* GetGame();
 
+
+/**
+	Encapsulates a python game module, which exposes methods called from the
+	engine during initialization and frame execution.
+
+*/
+class ScriptGameModule {
+
+public:
+	ScriptGameModule(const std::string& name);
+	void CallDoFrame();
+	void CallInit();
+
+private:
+	PyObject* _pModule;
+	PyObject* _pFuncDoFrame;
+	PyObject* _pFuncInit;
+
+};
 

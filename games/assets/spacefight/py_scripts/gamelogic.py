@@ -14,9 +14,9 @@ gv = 3
 
 def initModules():
 	spacefight.register_game_module("player_main")
-	spacefight.register_game_module("main_boss_ai")
-	spacefight.register_game_module("basic_enemy_ai")
-	spacefight.register_game_module("enemy_spawner")
+	#spacefight.register_game_module("main_boss_ai")
+	#spacefight.register_game_module("basic_enemy_ai")
+	#spacefight.register_game_module("enemy_spawner")
 	
 	
 	

@@ -1,5 +1,5 @@
 #pragma once
-#include "game.h"
+#include <game.h>
 #include "model.h"
 #include "input.h"
 #include "textures.h"
@@ -54,7 +54,7 @@ private:
 	PyObject *pArgs, *pValue;
 	PyObject* pFuncOnFirePressed;
 
-	std::vector<std::string> _registered_modules;
+	std::vector<ScriptGameModule*> _python_game_modules;
 
 
 	bool InitPythonEnv();

@@ -65,7 +65,6 @@ PyObject* spacefight_registerModule(PyObject* self, PyObject* args) {
 	}
 	
 	spacefight.RegisterModule(moduleName);
-
 	return PyLong_FromVoidPtr(nullptr);
 }
 
@@ -118,7 +117,10 @@ PyObject* PyInit_Spacefight(void) {
 
 
 void Spacefight::RegisterModule(const std::string& moduleName) {
-	_registered_modules.push_back(moduleName);
+
+	ScriptGameModule* module = new ScriptGameModule(moduleName);
+	_python_game_modules.push_back(module);
+	module->CallInit();
 }
 
 
@@ -172,6 +174,10 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	val = PyLong_AsLong(retval);
 
 	cwprintf("time for python call (micros): %d\n", diff);
+
+	for (auto& sm : _python_game_modules) {
+		sm->CallDoFrame();
+	}
 	
 	// End python frame stuff
 	
