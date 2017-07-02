@@ -11,7 +11,6 @@ gv = 3
 # A game module script must have two methods, which will be called by the engine:
 # - initGameModule
 # - doFrame
-
 def initModules():
 	spacefight.register_game_module("player_main")
 	#spacefight.register_game_module("main_boss_ai")

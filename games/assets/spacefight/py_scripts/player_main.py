@@ -5,7 +5,6 @@ player_game_object_id = 0
 # This method gets called every frame.
 # Here, the main logic for the player character 
 # is processed.
-
 def doFrame():
 	h = spacefight.get_player_health(1)
 	# if (spacefight.key_down(KEY_A) then:
