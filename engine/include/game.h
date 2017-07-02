@@ -27,6 +27,20 @@ public:
 	virtual void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) = 0;
 	virtual void ShutDown() = 0;
 
+	/**
+	This method is called from the engine once a frame
+	to allow the game to update its python based logic.
+	*/
+	virtual void DoPythonFrame() = 0;
+
+	/**
+	This method is called from the engine to retrieve the filename
+	of the Intro image to load.
+	Failing to deliver it will cause the engine to stop with an
+	error message.
+	*/
+	virtual std::string GetIntroImageName() = 0;
+
 };
 
 /**
@@ -40,10 +54,3 @@ public:
 Game* GetGame();
 
 
-/**
-	This method is called from the engine to retrieve the filename 
-	of the Intro image to load. 
-	Failing to deliver it will cause the engine to stop with an 
-	error message.
-*/
-std::string GetIntroImageName();

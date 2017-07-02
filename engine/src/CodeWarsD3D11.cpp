@@ -182,6 +182,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 	/// END INPUT LAYOUT SETUP
 
+	Game* game = GetGame();
+	if (!game) {
+		OutputDebugString("No game was provided via GetGame function\n");
+		cwprintf("no game was provided via GetGame function\n");
+		exit(1);
+	}
+
 	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
 	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
 
@@ -213,7 +220,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// Render loading screen
 	{
-		Texture tex(GetIntroImageName(), *renderer);
+		Texture tex(game->GetIntroImageName(), *renderer);
 		renderer->clearBackbuffer(clearColors);
 		modelMat = DirectX::XMMatrixScaling(1.8f, 1.8f, 1.8f);
 		projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
@@ -225,13 +232,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		Sleep(3000);
 	}
 
-	// Init the game
-	Game* game = GetGame();
-	if (!game) {
-		OutputDebugString("No game was provided via GetGame function\n");
-		cwprintf("no game was provided via GetGame function\n");
-		exit(1);
-	}
+	
 
 	cwprintf("doing game init\n");
 	game->Init(*renderer);

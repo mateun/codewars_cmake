@@ -15,6 +15,8 @@ public:
 	virtual void Init(Renderer& renderer); 
 	virtual void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) override;
 	virtual void ShutDown();
+	virtual void DoPythonFrame();
+	virtual std::string GetIntroImageName();
 
 private:
 	float clearColors[4];

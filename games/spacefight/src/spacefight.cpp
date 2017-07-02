@@ -16,8 +16,12 @@ Game* GetGame() {
 	return &spacefight;
 }
 
-std::string GetIntroImageName() {
+std::string Spacefight::GetIntroImageName() {
 	return "games/spacefight/textures/spacefight_intro.png";
+}
+
+void Spacefight::DoPythonFrame() {
+	// TODO
 }
 
 
