@@ -111,8 +111,9 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 				xOffset = 0;
 			}
 			hexModelMat = XMMatrixIdentity();
+			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, XMMatrixScaling(1, 3.0, 1)));
 			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, 
-				XMMatrixTranslation((-9) + x * 1.9 + 1.4 + xOffset, 0, y*2 + 2)));
+				XMMatrixTranslation((-9) + x * 1.8 + 1.4 + xOffset, 0, y*1.7 + 2)));
 			renderer.renderModel(*_basicHex, hexModelMat, _viewMat, _projMat, 
 								_vs, _ps, _inputLayout, *_hexTex);
 		}
