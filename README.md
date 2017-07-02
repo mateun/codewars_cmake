@@ -30,3 +30,16 @@ def initModules():
 	engine.register_game_module("main_boss_ai")
 	engine.register_game_module("basic_enemy_ai")
 	engine.register_game_module("enemy_spawner")
+```
+
+This snippet registers 4 modules to be used by the engine. 
+The engine will scan the current directory (the same where the "initModules" script is located)
+for the following file names:
+* player_main.py
+* main_boss_ai.py
+* basic_enemy_ai.py
+* enemy_spawner.py
+
+Each game module script must implement two methods:
+    doFrame
+	initGameModule
