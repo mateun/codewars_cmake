@@ -4,6 +4,8 @@
 #include "input.h"
 #include "textures.h"
 #include <py_embed.h>
+#include <vector>
+#include <string>
 
 constexpr unsigned int GAMEWIDTH = 1600;
 constexpr unsigned int GAMEHEIGHT = 900;
@@ -18,6 +20,7 @@ public:
 	virtual void ShutDown();
 	virtual void DoPythonFrame();
 	virtual std::string GetIntroImageName();
+	void RegisterModule(const std::string& module);
 
 private:
 	float clearColors[4];
@@ -50,6 +53,8 @@ private:
 	PyObject *pName, *pModule, *pDict, *pFunc;
 	PyObject *pArgs, *pValue;
 	PyObject* pFuncOnFirePressed;
+
+	std::vector<std::string> _registered_modules;
 
 
 	bool InitPythonEnv();

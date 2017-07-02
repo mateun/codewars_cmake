@@ -12,6 +12,17 @@
 #include <py_embed.h>
 #include <consoleprint.h>
 
+//////////////////////////////////
+// The game object itself
+static Spacefight spacefight;
+
+Game* GetGame() {
+	return &spacefight;
+}
+////////////////////////////////
+
+
+///////////////////////////////
 // Python stuff
 
 PyObject* spacefight_getHealth(PyObject* self, PyObject* args) {
@@ -43,6 +54,22 @@ PyObject* spacefight_spawnGameObject(PyObject* self, PyObject* args) {
 	return PyLong_FromVoidPtr(nullptr);
 }
 
+PyObject* spacefight_registerModule(PyObject* self, PyObject* args) {
+#ifdef _DEBUG
+	OutputDebugString("spacefight.registerModule called\n");
+#endif
+
+	char* moduleName;
+	if (!PyArg_ParseTuple(args, "s", &moduleName)) {
+		return nullptr;
+	}
+	
+	spacefight.RegisterModule(moduleName);
+
+	return PyLong_FromVoidPtr(nullptr);
+}
+
+
 PyObject* spacefight_drawModel(PyObject* self, PyObject* args) {
 #ifdef _DEBUG
 	OutputDebugString("spacefight.drawModel called\n");
@@ -58,6 +85,8 @@ PyMethodDef SpacefightMethods[] = {
 	"Draw a model." },
 	{ "spawn_game_object", spacefight_spawnGameObject, METH_VARARGS,
 	"Spawn a new game object." },
+	{ "register_game_module", spacefight_registerModule, METH_VARARGS,
+	"Register a game module." },
 	{ NULL, NULL, 0, NULL }
 };
 
@@ -87,11 +116,11 @@ PyObject* PyInit_Spacefight(void) {
 
 // end python stuff
 
-static Spacefight spacefight;
 
-Game* GetGame() {
-	return &spacefight;
+void Spacefight::RegisterModule(const std::string& moduleName) {
+	_registered_modules.push_back(moduleName);
 }
+
 
 std::string Spacefight::GetIntroImageName() {
 	return "games/assets/spacefight/textures/spacefight_intro.png";
@@ -115,11 +144,13 @@ bool Spacefight::InitPythonEnv() {
 	pModule = PyImport_Import(pName);
 	pFunc = PyObject_GetAttrString(pModule, "doFrame");
 	pFuncOnFirePressed = PyObject_GetAttrString(pModule, "onFirePressed");
+	PyObject* pFuncInitModules = PyObject_GetAttrString(pModule, "initModules");
 	
-	pArgs = PyTuple_New(1);
-	pValue = PyLong_FromLong(1);
-	PyTuple_SetItem(pArgs, 0, pValue);
-	
+	// Call "initModules" in python main script so it can 
+	// register additional modules for further use.
+	PyObject_CallObject(pFuncInitModules, nullptr);
+
+	// Initialize all the registered modules
 	
 	return true;
 }
@@ -129,7 +160,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	// Python call
 	auto start = std::chrono::high_resolution_clock::now();
 	
-	//pArgs = PyTuple_New(1);
+	pArgs = PyTuple_New(1);
 	pValue = PyLong_FromLong(1);
 	PyTuple_SetItem(pArgs, 0, pValue);
 

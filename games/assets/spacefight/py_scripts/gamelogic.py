@@ -3,6 +3,26 @@ import myfuncs
 
 gv = 3
 
+# This gets called from the engine 
+# and it is expected, that all additional 
+# modules are registered here.
+# A module must be in the same folder as 
+# this script and its name must correspond to its file name.
+# A game module script must have two methods, which will be called by the engine:
+# - initGameModule
+# - doFrame
+
+def initModules():
+	spacefight.register_game_module("player_main")
+	spacefight.register_game_module("main_boss_ai")
+	spacefight.register_game_module("basic_enemy_ai")
+	spacefight.register_game_module("enemy_spawner")
+	
+	
+	
+	
+
+
 class MyClass:
 	i = 194
 	

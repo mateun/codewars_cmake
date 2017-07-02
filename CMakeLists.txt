@@ -11,7 +11,7 @@ set(PYTHON_LIB c:/Python36-32/libs)
 set(PYTHON_DLL c:/Python36-32)
 
 
-include_directories(engine/include)
+include_directories(engine/include games/src/**/src/*.h)
 include_directories(${FREEIMAGE_INCLUDE})
 include_directories(${ASSIMP_INCLUDE})
 include_directories(C:/Program Files (x86)/Windows Kits/10/Include/10.0.10240.0/ucrt)
