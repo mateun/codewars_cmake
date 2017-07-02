@@ -41,5 +41,7 @@ for the following file names:
 * enemy_spawner.py
 
 Each game module script must implement two methods:
+
 `doFrame()`
+
 `initGameModule()`
