@@ -1,0 +1,13 @@
+# Blender MTL File: 'None'
+# Material Count: 1
+
+newmtl a_blinn2SG
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.548766 0.548766 0.548766
+Ks 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.000000
+illum 1
+map_Kd Muro_body_dm.tga
+map_Bump Muro_body_nm.tga -bm 1

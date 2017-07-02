@@ -1,5 +1,5 @@
 #include <stdafx.h>
-#include "spacefight.h"
+#include "codewars.h"
 #include "model_import.h"
 #include "textures.h"
 #include "shaders.h"
@@ -10,7 +10,7 @@
 #include "primitives.h"
 #include <chrono>
 
-static Spacefight spacefight;
+static CodeWars spacefight;
 
 Game* GetGame() {
 	return &spacefight;
@@ -22,8 +22,26 @@ std::string GetIntroImageName() {
 
 
 
-void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
+void CodeWars::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
 
+	if (input->keyState[DIK_A]) {
+		OutputDebugStringA("A pressed!\n");
+	}
+
+	if (input->mouse1Down) OutputDebugStringA("mousebutton1 pressed!\n");
+	if (input->mouse1Up) OutputDebugStringA("mousebutton1 up\n");
+
+	if (input->mouse2Down) OutputDebugStringA("mousebutton2 pressed!\n");
+	if (input->mouse2Up) OutputDebugStringA("mousebutton2 up\n");
+
+	
+		// track the movement
+	if (input->relMouseMovX != 0) {
+		char buf[500];
+		sprintf_s(buf, 500, "mouse X__: %d\n", input->relMouseMovX);
+		OutputDebugStringA(buf);
+	}
+	
 	
 	_menuShipRot += 0.0007f;
 	_modelMat = XMMatrixIdentity();
@@ -45,12 +63,29 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
 	//renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->normals, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
 
+	// play table
+	XMMATRIX tableModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), 1.2f);
+	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixScaling(2.0f, 1.0f, 2.0f)));
+	tableModelMat = XMMatrixTranspose(XMMatrixMultiply(tableModelMat, XMMatrixTranslation(0, 0, -5)));
+	//renderer.renderMesh(_playTable->positions, _playTable->uvs, _playTable->normals, _playTable->indices, tableModelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _metalTex);
+
+	// Draw the hex field
+	XMMATRIX hexModelMat = XMMatrixRotationAxis(XMLoadFloat3(&xAxis), -0.8f);
 	
-	XMFLOAT3 eyePos = XMFLOAT3(15, 60, -35);
-	XMFLOAT3 focusPos = XMFLOAT3(0, 0, 0);
+	if (input->keyState[DIK_W]) {
+		_camMovZ += 0.02f * frameTime;
+	}
+
+	if (input->keyState[DIK_S]) {
+		_camMovZ -= 0.02f * frameTime;
+	}
+
+	XMFLOAT3 eyePos = XMFLOAT3(15, 60, -35 + (_camMovZ));
+	XMFLOAT3 focusPos = XMFLOAT3(0, 0, 0 + (_camMovZ));
 	XMVECTOR eyeDirection = XMVectorSubtract(XMLoadFloat3(&focusPos), XMLoadFloat3(&eyePos));
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
-	
+	//_viewMat = DirectX::XMMatrixTranspose( XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
+
 	// recalc the view matrix
 	// r always points to the right, regardless of our pitch.
 	XMFLOAT3 r = XMFLOAT3(1, 0, 0);
@@ -65,7 +100,29 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	
 	_viewMat = DirectX::XMMatrixTranspose(XMMatrixLookAtLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&focusPos), u));
 	
-	
+	auto start = std::chrono::high_resolution_clock::now();
+	float xOffset = 0;
+	for (int x = 0; x < 10; ++x) {
+		for (int y = 0; y < 10; ++y) {
+			if (y % 2 == 1) {
+				xOffset = 1.0f;
+			}
+			else {
+				xOffset = 0;
+			}
+			hexModelMat = XMMatrixIdentity();
+			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, XMMatrixScaling(1, 3.0, 1)));
+			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, 
+				XMMatrixTranslation((-9) + x * 1.8 + 1.4 + xOffset, 0, y*1.7 + 2)));
+			renderer.renderModel(*_basicHex, hexModelMat, _viewMat, _projMat, 
+								_vs, _ps, _inputLayout, *_hexTex);
+		}
+	}
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	//char buf[200];
+	//sprintf_s(buf, 200, "hexfield rendertime: %d\n", diff);
+	//OutputDebugString(buf);
+
 	// Draw a server
 	XMMATRIX serverModelMat = XMMatrixIdentity();
 	serverModelMat = XMMatrixTranspose(XMMatrixMultiply(serverModelMat, XMMatrixScaling(0.4f, 0.4f, 0.4f)));
@@ -134,15 +191,15 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 
 }
 
-Spacefight::Spacefight() : clearColors{ 0.01f, 0.1f, 0.1f, 1.0f } {
+CodeWars::CodeWars() : clearColors{ 0.01f, 0.1f, 0.1f, 1.0f } {
 
 }
 
-Spacefight::~Spacefight() {
+CodeWars::~CodeWars() {
 	ShutDown();
 }
 
-void Spacefight::Init(Renderer& renderer) {
+void CodeWars::Init(Renderer& renderer) {
 	
 	
 	// Import assets
@@ -236,7 +293,7 @@ void Spacefight::Init(Renderer& renderer) {
 	
 }
 
-void Spacefight::ShutDown() {
+void CodeWars::ShutDown() {
 	safeRelease(&_vs);
 	safeRelease(&_ps);
 	safeRelease(&_shipTexture);
