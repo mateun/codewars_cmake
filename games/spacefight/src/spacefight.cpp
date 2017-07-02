@@ -251,6 +251,10 @@ void Spacefight::ShutDown() {
 		delete(_hexTex); _hexTex = nullptr;
 	}
 
+	if (_shipTex) {
+		delete(_shipTex); _shipTex = nullptr;
+	}
+
 	if (_cardModel) {
 		delete(_cardModel); _cardModel = nullptr;
 	}
