@@ -42,6 +42,8 @@ for the following file names:
 
 Each game module script must implement two methods:
 
-`doFrame()`
+```python
+def doFrame():
 
-`initGameModule()`
+def initGameModule():
+```
