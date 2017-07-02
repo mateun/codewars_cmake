@@ -1,4 +1,5 @@
 import spacefight
+import myfuncs
 
 gv = 3
 
@@ -36,7 +37,7 @@ def doFrame(a):
 	spacefight.draw_model()
 	spacefight.spawn_game_object("mygo_hero2")
 		
-	return a + 99 + h + (c.f()) + s.go() + gv
+	return a + 99 + h + (c.f()) + s.go() + gv + myfuncs.hello()
 	
 
 def onFirePressed():
