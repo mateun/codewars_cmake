@@ -247,9 +247,76 @@ void Renderer::createRenderTargetTexture(UINT w, UINT h, ID3D11Texture2D** tex) 
 
 
 void Renderer::init(int w, int h, HWND hWnd) {
+	// Query the adapters
+	IDXGIFactory* tmpFac = nullptr;
+	HRESULT result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&tmpFac);
+	if (FAILED(result)) {
+		OutputDebugString("IDXGI factory creation failed\n");
+		exit(2);
+	}
+	IDXGIAdapter* adapter;
+	result = tmpFac->EnumAdapters(0, &adapter);
+	if (FAILED(result)) {
+		OutputDebugString("Adapter enum failed\n");
+		exit(2);
+	}
+
+	IDXGIOutput* adapterOutput;
+	result = adapter->EnumOutputs(0, &adapterOutput);
+	if (FAILED(result)) {
+		OutputDebugString("Failed to create adapter output\n");
+		exit(2);
+	}
+
+	UINT numModes;
+	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, nullptr);
+	if (FAILED(result)) {
+		OutputDebugString("Failed to list modes\n");
+		exit(2);
+	}
+
+	DXGI_MODE_DESC* modeList = new DXGI_MODE_DESC[numModes];
+	result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, modeList);
+	if (FAILED(result)) {
+		OutputDebugString("Failed to create mode list\n");
+		exit(2);
+	}
+
+	UINT numerator = 0;
+	UINT denumarator = 0;
+	for (int i = 0; i < numModes; ++i) {
+		if (modeList[i].Width == w) {
+			if (modeList[i].Height == h) {
+				numerator = modeList[i].RefreshRate.Numerator;
+				denumarator = modeList[i].RefreshRate.Denominator;
+				OutputDebugString("Found valid refresh rate setting\n");
+			}
+		}
+	}
+
+	if (numerator == 0) {
+		OutputDebugString("Could not find valid refresh rate\n");
+		exit(2);
+	}
+
+	delete [] modeList;
+	modeList = nullptr;
+
+	adapterOutput->Release();
+	adapterOutput = nullptr;
+
+	adapter->Release();
+	adapter = nullptr;
+
+	tmpFac->Release();
+	tmpFac = nullptr;
+
+	// end adapter querying
+
+
 	D3D_FEATURE_LEVEL featureLevels =  D3D_FEATURE_LEVEL_11_1;
 
-	HRESULT result = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, &featureLevels, 1, D3D11_SDK_VERSION, &_device, NULL, &_ctx);
+	result = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, &featureLevels, 1, D3D11_SDK_VERSION, &_device, NULL, &_ctx);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"CreateDevice failed\n");
 		exit(2);
