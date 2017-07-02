@@ -54,8 +54,9 @@ def doFrame(a):
 	h = spacefight.get_player_health(1)
 	#h = 100
 	
+	# Do some test calls to the engine helper functions
 	spacefight.draw_model()
-	spacefight.spawn_game_object("mygo_hero2")
+	#goid = spacefight.spawn_game_object("mygo_hero2", 10, 7, 8)
 		
 	return a + 99 + h + (c.f()) + s.go() + gv + myfuncs.hello()
 	

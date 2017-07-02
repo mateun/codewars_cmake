@@ -74,3 +74,17 @@ private:
 
 };
 
+/**
+	The main artifacts in the game world.
+	GameObjects hold the state of the game. 
+	They can (but don't need to) be rendered and 
+	get a chance to update their state each frame. 
+*/
+class GameObject {
+public:
+
+private:
+	XMFLOAT3 _worldPosition;
+
+};
+

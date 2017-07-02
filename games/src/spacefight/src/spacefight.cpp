@@ -40,18 +40,35 @@ PyObject* spacefight_getHealth(PyObject* self, PyObject* args) {
 	return PyLong_FromLong(playerHealth);
 }
 
-PyObject* spacefight_spawnGameObject(PyObject* self, PyObject* args) {
+PyObject* spacefight_translateGameObject(PyObject* self, PyObject* args) {
 #ifdef _DEBUG
-	OutputDebugString("spacefight.drawModel called\n");
+	OutputDebugString("spacefight.translateGameObject called\n");
 #endif
 
-	char* goName;
-	if (!PyArg_ParseTuple(args, "s", &goName)) {
+	int goId;
+	
+	int posX, posY, posZ;
+	if (!PyArg_ParseTuple(args, "iiii", &goId, &posX, &posY, &posZ)) {
 		return nullptr;
 	}
 
-
+	// TODO: retrieve game object and translate it
 	return PyLong_FromVoidPtr(nullptr);
+}
+
+PyObject* spacefight_spawnGameObject(PyObject* self, PyObject* args) {
+#ifdef _DEBUG
+	OutputDebugString("spacefight.spawnGameObject called\n");
+#endif
+
+	char* goName;
+	int posX, posY, posZ;
+	if (!PyArg_ParseTuple(args, "siii", &goName, &posX, &posY, &posZ)) {
+		return nullptr;
+	}
+
+	// TODO: get unique game object id
+	return PyLong_FromLong(991);
 }
 
 PyObject* spacefight_registerModule(PyObject* self, PyObject* args) {
@@ -86,6 +103,8 @@ PyMethodDef SpacefightMethods[] = {
 	"Spawn a new game object." },
 	{ "register_game_module", spacefight_registerModule, METH_VARARGS,
 	"Register a game module." },
+	{ "game_object_translate", spacefight_translateGameObject, METH_VARARGS,
+	"Translate a game module." },
 	{ NULL, NULL, 0, NULL }
 };
 
