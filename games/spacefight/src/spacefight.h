@@ -3,6 +3,7 @@
 #include "model.h"
 #include "input.h"
 #include "textures.h"
+#include <py_embed.h>
 
 constexpr unsigned int GAMEWIDTH = 1600;
 constexpr unsigned int GAMEHEIGHT = 900;
@@ -44,4 +45,11 @@ private:
 	float _menuShipRot = 0;
 	float _sineUpDown = 0;
 	float _camMovZ = 0;
+
+	// Python stuff
+	PyObject *pName, *pModule, *pDict, *pFunc;
+	PyObject *pArgs, *pValue;
+
+
+	bool InitPythonEnv();
 };

@@ -215,7 +215,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 		renderer->presentBackBuffer();
 
-		Sleep(3000);
+		Sleep(500);
 	}
 
 	// Render loading screen
@@ -229,7 +229,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 
 		renderer->presentBackBuffer();
-		Sleep(3000);
+		Sleep(500);
 	}
 
 	

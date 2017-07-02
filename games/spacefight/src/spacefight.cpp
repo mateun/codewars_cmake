@@ -7,8 +7,58 @@
 #include <resource_management.h>
 #include <dinput.h>
 #include "model.h"
-#include "primitives.h"
+#include <primitives.h>
 #include <chrono>
+#include <py_embed.h>
+#include <consoleprint.h>
+
+// Python stuff
+
+PyObject* spacefight_getHealth(PyObject* self, PyObject* args) {
+	OutputDebugString("emb_getHealth called from python!\n");
+	cwprintf("spacefight_getHealth called from python!\n");
+	int playerNr = 0;
+	int playerHealth = 100;
+	if (!PyArg_ParseTuple(args, "i", &playerNr)) {
+		return nullptr;
+	}
+
+	// TODO make fake impl real
+	// e.g. lookup health for player somewhere
+	return PyLong_FromLong(playerHealth);
+}
+
+PyMethodDef SpacefightMethods[] = {
+	{ "get_player_health", spacefight_getHealth, METH_VARARGS,
+	"Return the current health value of the player given by its number." },
+	{ NULL, NULL, 0, NULL }
+};
+
+PyModuleDef SpacefightModule = {
+	PyModuleDef_HEAD_INIT, "spacefight", NULL, -1, SpacefightMethods,
+	//NULL, NULL, NULL, NULL
+};
+
+PyObject* PyInit_Spacefight(void) {
+	try {
+		// BEWARE: I received an exception when linking to release 
+		// Python lib & dll. 
+		// When in debug mode, it seems to be important to link to 
+		// debug python lib & dll. 
+		PyObject* m = PyModule_Create(&SpacefightModule);
+		if (m) {
+			OutputDebugString("loaded python module\n");
+			return m;
+		}
+	}
+	catch (...) {
+		OutputDebugString("caught exception while calling PyModuleCreate\n");
+	}
+}
+
+
+
+// end python stuff
 
 static Spacefight spacefight;
 
@@ -24,10 +74,42 @@ void Spacefight::DoPythonFrame() {
 	// TODO
 }
 
+bool Spacefight::InitPythonEnv() {
+	// We add our module to the system modules.
+	// Call this before Py_Initialize().
+	int res = PyImport_AppendInittab("spacefight", &PyInit_Spacefight);
+	
+	return true;
+}
 
 
 void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
+	// Python call
+	auto start = std::chrono::high_resolution_clock::now();
+	Py_Initialize();
+	// Where to look for our scripts
+	PySys_SetPath(L"./games/spacefight/py_scripts");
+	// This is the name of our python script.
+	pName = PyUnicode_DecodeFSDefault("gamelogic");
 
+	pModule = PyImport_Import(pName);
+	pFunc = PyObject_GetAttrString(pModule, "doFrame");
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	
+	cwprintf("time for python init (micros): %d\n", diff);
+	start = std::chrono::high_resolution_clock::now();
+	
+	pArgs = PyTuple_New(1);
+	pValue = PyLong_FromLong(1);
+	PyTuple_SetItem(pArgs, 0, pValue);
+	pValue = PyObject_CallObject(pFunc, pArgs);
+	long val = PyLong_AsLong(pValue);
+	
+	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	cwprintf("time for python call (micros): %d\n", diff);
+	
+	
+	// End python frame stuff
 	
 	_menuShipRot += 0.007f;
 	_modelMat = XMMatrixIdentity();
@@ -147,7 +229,7 @@ Spacefight::~Spacefight() {
 }
 
 void Spacefight::Init(Renderer& renderer) {
-	
+	InitPythonEnv();
 	
 	// Import assets
 	_shipModel = new Model();
@@ -281,4 +363,8 @@ void Spacefight::ShutDown() {
 	if (_serverTex) {
 		delete(_serverTex); _serverTex = nullptr;
 	}
+
+	// Python cleanup
+	Py_FinalizeEx();
+
 }
