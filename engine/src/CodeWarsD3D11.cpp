@@ -15,6 +15,7 @@
 #include <dinput.h>
 #include <chrono>
 #include <py_embed.h>
+#include <logging.h>
 
 #include <consoleprint.h>
 
@@ -128,6 +129,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	HRESULT res = D3DCompileFromFile(L"shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
 	if (FAILED(res)) {
 		OutputDebugStringW(L"shader load failed\n");
+		cwprintf("vshader load failed\n");
 		if (errBlob)
 		{
 			OutputDebugStringA((char*)errBlob->GetBufferPointer());
@@ -143,6 +145,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	res = D3DCompileFromFile(L"shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
 	if (FAILED(res)) {
 		OutputDebugString("shader load failed\n");
+		cwprintf("pshader load failed\n");
 		if (errBlob)
 		{
 			OutputDebugStringA((char*)errBlob->GetBufferPointer());
@@ -160,6 +163,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	CreatePixelShader(renderer->getDevice(), ps, &pShader);
 	/// END SHADER SETUP
 
+	cwprintf("shaders created\n");
 
 	/// INPUT LAYOUT SETUP
 	D3D11_INPUT_ELEMENT_DESC ied[] = {
@@ -173,6 +177,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	res = const_cast<ID3D11Device*>(renderer->getDevice())->CreateInputLayout(ied, 3, vs->GetBufferPointer(), vs->GetBufferSize(), &inputLayout);
 	if (FAILED(res)) {
 		OutputDebugString("input layout in main failed\n");
+		cwprintf("input layout failed\n");
 		exit(1);
 	}
 	/// END INPUT LAYOUT SETUP
@@ -181,6 +186,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	ID3D11Texture2D* tex;
 	loadTextureFromFile("textures/engine_splash.png", &tex, renderer);
 	//loadTextureFromFile(GetIntroImageName(), &tex, renderer);
+
+	cwprintf("texture loaded\n");
 
 	modelMat = DirectX::XMMatrixScaling(2, 2, 2);
 	//modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
@@ -215,12 +222,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	indices.push_back(3);
 	indices.push_back(1);
 
+	
+
 	renderer->setViewport(0, 0, WIDTH, HEIGHT);
 	renderer->clearBackbuffer(clearColors);
 	// TODO rewrite to model
 	//renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 	
+	cwprintf("bb cleared\n");
+
 	Sleep(2);
 
 	// render loading screen
@@ -238,10 +249,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	Game* game = GetGame();
 	if (!game) {
 		OutputDebugString("No game was provided via GetGame function\n");
+		cwprintf("no game was provided via GetGame function\n");
 		exit(1);
 	}
 
+	cwprintf("doing game init\n");
 	game->Init(*renderer);
+	cwprintf("game init done\n");
 
 	
 	float rotZ = 0.0f;
@@ -251,7 +265,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	////////////////////////////
 	/// Python stuff
 	////////////////////////////
+	cwprintf("calling pyunc\n");
 	callPyFunc();
+	cwprintf("called pyunc\n");
 
 
 	/// end python stuff
@@ -319,17 +335,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// end input gathering
 
 		game->DoFrame(*renderer, &frameInput, frameTime);
-
 		frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
 
+		#ifdef GAME_DEBUG 
 		char buf[2000];
 		sprintf_s(buf, 2000, "============================frametime: %d\n", frameTime);
 		OutputDebugString(buf);
+		#endif	
 
 
 		// TODO: this should come from the system refresh rate, 
 		// e.g. 60 HZ should give ~16
-		UINT desiredFrameTime = 9;
+		UINT desiredFrameTime = 16;
 		int timeToWait = desiredFrameTime - frameTime;
 		if (timeToWait < 0) {
 			#ifdef GAME_DEBUG 
@@ -343,8 +360,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			sprintf_s(buf, 2000, "waitTime: %d\n", timeToWait);
 			OutputDebugString(buf);
 			#endif
-			// Commenting the sleep for now, as we are running in vsync mode, should not be needed!
-			//Sleep(timeToWait);
+			// Sleep is not needed for vsync, but we need it to give a bit of breathing room for the machine, 
+			// otherwise it runs right away with > 40%.
+			Sleep(timeToWait);
 		}
 				
 	}
@@ -405,6 +423,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
+
+   cwprintf("In init instance.\n");
+   
    hInst = hInstance; // Store instance handle in our global variable
 
    HWND hWnd = CreateWindow("winclass", 
@@ -420,9 +441,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    {
       return FALSE;
    }
-
+   cwprintf("Window created.\n");
+   flog("Window created.\n");
+   
    renderer = new Renderer(WIDTH, HEIGHT, hWnd);
+   cwprintf("renderer created.\n");
+   
    initDirectInput(hInst, hWnd);
+   cwprintf("DI initialized.\n");
+   flog("DI initialized.\n");
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);

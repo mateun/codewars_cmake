@@ -76,16 +76,29 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 		_camMovZ += 0.02f * frameTime;
 	}
 
-	_camMovZ += 0.002f * frameTime;
-
 	if (input->keyState[DIK_S]) {
 		_camMovZ -= 0.02f * frameTime;
 	}
 
-	XMFLOAT3 eyePos = XMFLOAT3(0, 40, -35 + (_camMovZ));
-	XMFLOAT3 eyeDir = XMFLOAT3(0, -0.75, 1);
+	XMFLOAT3 eyePos = XMFLOAT3(15, 60, -35 + (_camMovZ));
+	XMFLOAT3 focusPos = XMFLOAT3(0, 0, 0 + (_camMovZ));
+	XMVECTOR eyeDirection = XMVectorSubtract(XMLoadFloat3(&focusPos), XMLoadFloat3(&eyePos));
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
-	_viewMat = DirectX::XMMatrixTranspose( XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
+	//_viewMat = DirectX::XMMatrixTranspose( XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
+
+	// recalc the view matrix
+	// r always points to the right, regardless of our pitch.
+	XMFLOAT3 r = XMFLOAT3(1, 0, 0);
+	XMFLOAT3 u0 = XMFLOAT3(0, 1, 0);
+	XMFLOAT3 f0 = XMFLOAT3(0, 0, 1);
+
+	XMVECTOR ry = XMQuaternionRotationAxis(XMLoadFloat3(&u0), -0.0);
+	
+	XMVECTOR eyedir_rotated = XMVector3Rotate(XMLoadFloat3(&f0), ry);
+	XMVECTOR u = XMVector3Cross(eyedir_rotated, XMLoadFloat3(&r));
+
+	
+	_viewMat = DirectX::XMMatrixTranspose(XMMatrixLookAtLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&focusPos), u));
 	
 	auto start = std::chrono::high_resolution_clock::now();
 	float xOffset = 0;
@@ -148,7 +161,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	renderer.createRenderTargetShaderResourceViewForTexture(radarMapTex, &radarMapSRV);
 	
 	eyePos = XMFLOAT3(0, 75, 0);
-	eyeDir = XMFLOAT3(0, -1, 0);
+	XMFLOAT3 eyeDir = XMFLOAT3(0, -1, 0);
 	upDir = XMFLOAT3(0, 0, 1);
 	XMMATRIX mapView = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
 	renderer.setTextureRenderTarget(&radarMapRTV);

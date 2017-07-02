@@ -3,6 +3,8 @@
 #include <dxgi.h>
 #include <chrono>
 #include <string>
+#include <logging.h>
+#include <consoleprint.h>
 
 Renderer::Renderer(int w, int h, HWND hWnd) {
 	init(w, h, hWnd);
@@ -247,11 +249,13 @@ void Renderer::createRenderTargetTexture(UINT w, UINT h, ID3D11Texture2D** tex) 
 
 
 void Renderer::init(int w, int h, HWND hWnd) {
+	flog("In RenderInit.\n");
 	// Query the adapters
 	IDXGIFactory* tmpFac = nullptr;
 	HRESULT result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&tmpFac);
 	if (FAILED(result)) {
 		OutputDebugString("IDXGI factory creation failed\n");
+		flog("IDXGI factory creation failed\n");
 		exit(2);
 	}
 	IDXGIAdapter* adapter;
@@ -290,6 +294,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 				numerator = modeList[i].RefreshRate.Numerator;
 				denumarator = modeList[i].RefreshRate.Denominator;
 				OutputDebugString("Found valid refresh rate setting\n");
+				flog("Found valid refresh rate: %d%d\n", numerator, denumarator);
 			}
 		}
 	}
@@ -313,12 +318,20 @@ void Renderer::init(int w, int h, HWND hWnd) {
 
 	// end adapter querying
 
+	flog("adpater querying finished.\n");
 
 	D3D_FEATURE_LEVEL featureLevels =  D3D_FEATURE_LEVEL_11_1;
 
-	result = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, &featureLevels, 1, D3D11_SDK_VERSION, &_device, NULL, &_ctx);
+	UINT cdfs = 0;
+
+#ifdef _DEBUG
+	cdfs |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+	result = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, cdfs, &featureLevels, 1, D3D11_SDK_VERSION, &_device, NULL, &_ctx);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"CreateDevice failed\n");
+		flog("create device failed.\n");
 		exit(2);
 	}
 
@@ -334,8 +347,8 @@ void Renderer::init(int w, int h, HWND hWnd) {
 
 	scdesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	
-	scdesc.BufferDesc.RefreshRate.Numerator = 60;
-	scdesc.BufferDesc.RefreshRate.Denominator = 1;
+	scdesc.BufferDesc.RefreshRate.Numerator = numerator;
+	scdesc.BufferDesc.RefreshRate.Denominator = denumarator;
 	
 	scdesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 
@@ -358,6 +371,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	result = pIDXGIFactory->CreateSwapChain(_device, &scdesc, &_swapChain);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"error creating swapchain\n");
+		flog("swapchain failed.\n");
 		exit(1);
 	}
 
@@ -367,12 +381,15 @@ void Renderer::init(int w, int h, HWND hWnd) {
 
 
 	// Gather the debug interface
+#ifdef _DEBUG
 	_debugger = 0;
 	result = _device->QueryInterface(__uuidof(ID3D11Debug), (void**)&_debugger);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"debuger creation failed\n");
+		flog("debugger creation failed\n");
 		exit(1);
 	}
+#endif
 
 	
 
@@ -380,6 +397,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	result = _swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&_backBuffer);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"backbuffer creation failed\n");
+		flog("backbuffer creation failed.\n");
 		exit(1);
 	}
 
@@ -387,8 +405,11 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	result = _device->CreateRenderTargetView(_backBuffer, NULL, &_rtv);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"rtv creation failed\n");
+		flog("rtv finished.\n");
 		exit(1);
 	}
+
+	cwprintf("swapchain created\n");
 
 	// Create a depth/stencil buffer
 	D3D11_TEXTURE2D_DESC td;
@@ -407,6 +428,8 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	result = _device->CreateTexture2D(&td, 0, &_depthStencilBuffer);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"D S buffer creation failed\n");
+		flog("D S failed.\n");
+		cwprintf("DS faile\n");
 		exit(1);
 	}
 
@@ -419,8 +442,12 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	result = _device->CreateDepthStencilView(_depthStencilBuffer, &dpd, &_depthStencilView);
 	if (FAILED(result)) {
 		OutputDebugStringW(L"D S view creation failed\n");
+		flog("DS view creation failed.\n");
 		exit(1);
 	}
+
+	flog("DS view created\n");
+	cwprintf("DW view created\n");
 
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
 	depthStencilDesc.DepthEnable = TRUE;

@@ -1,5 +1,6 @@
 #include <py_embed.h>
 #include <Windows.h>
+#include <consoleprint.h>
 
 static PyObject *pName, *pModule, *pDict, *pFunc;
 static PyObject *pArgs, *pValue;
@@ -68,6 +69,7 @@ PyObject* PyInit_emb(void) {
 
 PyObject* emb_getHealth(PyObject* self, PyObject* args) {
 	OutputDebugString("emb_getHealth called from python!\n");
+	cwprintf("emb_getHealth called from python!\n");
 	int playerNr = 0;
 	int playerHealth = 100;
 	if (!PyArg_ParseTuple(args, "i", &playerNr)) {

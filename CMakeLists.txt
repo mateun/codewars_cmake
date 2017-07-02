@@ -3,7 +3,9 @@ project(codewars)
 
 set(FREEIMAGE_INCLUDE C:/Users/martin/Documents/Projects/C++/FreeImage/Source)
 set(ASSIMP_INCLUDE C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/include)
-set(ASSIMP_LIB C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/build/code/Debug)
+set(ASSIMP_LIBD C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/build/code/Debug)
+set(ASSIMP_LIB C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/build/code/Release)
+
 set(FREEIMAGE_LIB C:/Users/martin/Documents/Projects/C++/FreeImage/Dist/x32)
 set(PYTHON_LIB c:/Python36-32/libs)
 set(PYTHON_DLL c:/Python36-32)
@@ -16,14 +18,20 @@ include_directories(C:/Program Files (x86)/Windows Kits/10/Include/10.0.10240.0/
 include_directories(C:/Program Files (x86)/Windows Kits/10/Include/10.0.14393.0/um)
 include_directories(C:/Python36-32/include)
 
-link_directories(${PYTHON_LIB} ${ASSIMP_LIB} ${FREEIMAGE_LIB} )
+#link_directories(${PYTHON_LIB} ${ASSIMP_LIB} ${FREEIMAGE_LIB} )
 
 file(GLOB engine_sources engine/src/*.cpp)
 file(GLOB game_sources games/spacefight/src/*.cpp)
 
 
 add_executable(engine_main WIN32 ${engine_sources} ${game_sources})
-target_link_libraries(engine_main assimp-vc120-mt.lib FreeImaged.lib dxgi.lib dxguid.lib d3d11.lib dinput8.lib d3dcompiler.lib kernel32.lib python36_d.lib)
+target_link_libraries(engine_main debug ${ASSIMP_LIBD}/assimp-vc120-mt.lib 
+								  optimized ${ASSIMP_LIB}/assimp-vc120-mt.lib 
+								  debug ${FREEIMAGE_LIB}/FreeImaged.lib 
+								  optimized ${FREEIMAGE_LIB}/FreeImage.lib 
+								  dxgi.lib dxguid.lib d3d11.lib dinput8.lib d3dcompiler.lib kernel32.lib 
+								  debug ${PYTHON_LIB}/python36_d.lib
+								  optimized ${PYTHON_LIB}/python36.lib)
 
 add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
@@ -35,15 +43,20 @@ add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build even
         "${PYTHON_DLL}/python36_d.dll"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>)   
 
-		add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
-        "${PYTHON_DLL}/python36_d.dll"      # <--this is in-file
+        "${PYTHON_DLL}/python36.dll"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>)  
 
 add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
         "${FREEIMAGE_LIB}/FreeImaged.dll"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>)   
+
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
+        "${FREEIMAGE_LIB}/FreeImage.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>)  
 
 add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."

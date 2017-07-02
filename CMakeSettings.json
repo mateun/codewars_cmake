@@ -10,14 +10,15 @@
         "cmakeCommandArgs": "",
         "buildCommandArgs": "-m -v:minimal"
       },
-        {
+      {
         "name": "x86-Release",
         "generator": "Visual Studio 15 2017",
-        "configurationType" : "Release",
-        "buildRoot":  "${env.LOCALAPPDATA}\\CMakeBuild\\${workspaceHash}\\build\\${name}",
-        "cmakeCommandArgs":  "",
+        "configurationType": "Release",
+        //"buildRoot": "${env.LOCALAPPDATA}\\CMakeBuild\\${workspaceHash}\\build\\${name}",
+        "buildRoot": "${projectDir}\\build\\win32_dist\\${name}",
+        "cmakeCommandArgs": "",
         "buildCommandArgs": "-m -v:minimal"
-        },
+      },
         {
         "name": "x64-Debug",
         "generator": "Visual Studio 15 2017 Win64",
