@@ -29,9 +29,35 @@ PyObject* spacefight_getHealth(PyObject* self, PyObject* args) {
 	return PyLong_FromLong(playerHealth);
 }
 
+PyObject* spacefight_spawnGameObject(PyObject* self, PyObject* args) {
+#ifdef _DEBUG
+	OutputDebugString("spacefight.drawModel called\n");
+#endif
+
+	char* goName;
+	if (!PyArg_ParseTuple(args, "s", &goName)) {
+		return nullptr;
+	}
+
+
+	return PyLong_FromVoidPtr(nullptr);
+}
+
+PyObject* spacefight_drawModel(PyObject* self, PyObject* args) {
+#ifdef _DEBUG
+	OutputDebugString("spacefight.drawModel called\n");
+#endif
+	
+	return PyLong_FromVoidPtr(nullptr);
+}
+
 PyMethodDef SpacefightMethods[] = {
 	{ "get_player_health", spacefight_getHealth, METH_VARARGS,
 	"Return the current health value of the player given by its number." },
+	{ "draw_model", spacefight_drawModel, METH_VARARGS,
+	"Draw a model." },
+	{ "spawn_game_object", spacefight_spawnGameObject, METH_VARARGS,
+	"Spawn a new game object." },
 	{ NULL, NULL, 0, NULL }
 };
 
@@ -245,7 +271,7 @@ void Spacefight::Init(Renderer& renderer) {
 	_playTable = new Model();
 	_basicHex = new Model();
 	_server = new Model();
-	importModel("models/corvette1.obj", _shipModel, renderer);
+	importModel("games/spacefight/models/corvette1.obj", _shipModel, renderer);
 	importModel("games/spacefight/models/simple_ship1.obj", _simpleShipModel, renderer);
 	importModel("games/spacefight/models/card.obj", _cardModel, renderer);
 	importModel("games/spacefight/models/play_table.obj", _playTable, renderer);

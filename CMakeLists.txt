@@ -88,4 +88,9 @@ add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build even
         "${PROJECT_SOURCE_DIR}/games/spacefight/sound"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>/games/spacefight/sound)  
 
+add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/games"      # <--this is in-file
+        $<TARGET_FILE_DIR:engine_main>/games)  
+
 # TODO add copying of shader/model/texture resources
