@@ -15,8 +15,9 @@
 // Python stuff
 
 PyObject* spacefight_getHealth(PyObject* self, PyObject* args) {
-	OutputDebugString("emb_getHealth called from python!\n");
-	cwprintf("spacefight_getHealth called from python!\n");
+#ifdef _DEBUG
+	OutputDebugString("spacefight called\n");	
+#endif
 	int playerNr = 0;
 	int playerHealth = 100;
 	if (!PyArg_ParseTuple(args, "i", &playerNr)) {
@@ -87,21 +88,12 @@ bool Spacefight::InitPythonEnv() {
 
 	pModule = PyImport_Import(pName);
 	pFunc = PyObject_GetAttrString(pModule, "doFrame");
-	
+	pFuncOnFirePressed = PyObject_GetAttrString(pModule, "onFirePressed");
 	
 	pArgs = PyTuple_New(1);
 	pValue = PyLong_FromLong(1);
 	PyTuple_SetItem(pArgs, 0, pValue);
 	
-	PyObject* retval = PyObject_CallObject(pFunc, pArgs);
-	long val = PyLong_AsLong(retval);
-
-	// do something in between...
-	// and call again...
-	// Problem is, I can not hold the state of the python script!
-	// In the frame, if I reference the member variables, it crashes.
-	retval = PyObject_CallObject(pFunc, pArgs);
-	val = PyLong_AsLong(retval);
 	
 	return true;
 }
@@ -110,28 +102,19 @@ bool Spacefight::InitPythonEnv() {
 void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
 	// Python call
 	auto start = std::chrono::high_resolution_clock::now();
-	/*Py_Initialize();
-	// Where to look for our scripts
-	PySys_SetPath(L"./games/spacefight/py_scripts");
-	// This is the name of our python script.
-	pName = PyUnicode_DecodeFSDefault("gamelogic");
-
-	pModule = PyImport_Import(pName);
-	pFunc = PyObject_GetAttrString(pModule, "doFrame");
-	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
 	
-	cwprintf("time for python init (micros): %d\n", diff);
-	start = std::chrono::high_resolution_clock::now();
-	
-	pArgs = PyTuple_New(1);
+	//pArgs = PyTuple_New(1);
 	pValue = PyLong_FromLong(1);
-	PyTuple_SetItem(pArgs, 0, pValue);*/
+	PyTuple_SetItem(pArgs, 0, pValue);
+
 	PyObject* retval = PyObject_CallObject(pFunc, pArgs);
 	long val = PyLong_AsLong(retval);
-	
-	//diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
-	//cwprintf("time for python call (micros): %d\n", diff);
-	
+	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+
+	retval = PyObject_CallObject(pFuncOnFirePressed, nullptr);
+	val = PyLong_AsLong(retval);
+
+	cwprintf("time for python call (micros): %d\n", diff);
 	
 	// End python frame stuff
 	

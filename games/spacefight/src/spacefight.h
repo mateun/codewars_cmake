@@ -49,6 +49,7 @@ private:
 	// Python stuff
 	PyObject *pName, *pModule, *pDict, *pFunc;
 	PyObject *pArgs, *pValue;
+	PyObject* pFuncOnFirePressed;
 
 
 	bool InitPythonEnv();
