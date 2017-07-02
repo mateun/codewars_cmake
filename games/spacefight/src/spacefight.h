@@ -36,6 +36,7 @@ private:
 	ID3D11Texture2D* _metalTex = nullptr;
 	Texture* _hexTex = nullptr;
 	Texture* _serverTex = nullptr;
+	Texture* _shipTex = nullptr;
 	
 
 	float _menuShipRot = 0;

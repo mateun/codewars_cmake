@@ -4,6 +4,8 @@
 #include <vector>
 #include <resource_management.h>
 
+class Renderer;
+
 using namespace DirectX;
 
 struct Model {
@@ -26,3 +28,5 @@ struct Model {
 	ID3D11Buffer* indexBuffer;
 
 };
+
+void createPlaneModel(Model* model, Renderer& renderer);

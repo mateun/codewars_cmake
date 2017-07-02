@@ -17,7 +17,8 @@ Game* GetGame() {
 }
 
 std::string GetIntroImageName() {
-	return "games/spacefight/textures/spacefight_intro.png";
+	//return "games/spacefight/textures/spacefight_intro.png";
+	return "";
 }
 
 

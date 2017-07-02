@@ -7,7 +7,7 @@
 #include <d3dcompiler.h>
 #include "shaders.h"
 #include <FreeImage.h>
-#include "textures.h"
+#include <textures.h>
 #include "game.h"
 #include "model_import.h"
 #include "resource_management.h"
@@ -28,8 +28,8 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
-constexpr UINT WIDTH = 1600;
-constexpr UINT HEIGHT = 900;
+constexpr UINT WIDTH = 1920;
+constexpr UINT HEIGHT = 1080;
 
 // DINPUT
 LPDIRECTINPUT8 di = nullptr;
@@ -182,68 +182,49 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 	/// END INPUT LAYOUT SETUP
 
-	// RenderSplash
-	ID3D11Texture2D* tex;
-	loadTextureFromFile("textures/engine_splash.png", &tex, renderer);
-	//loadTextureFromFile(GetIntroImageName(), &tex, renderer);
-
-	cwprintf("texture loaded\n");
-
-	modelMat = DirectX::XMMatrixScaling(2, 2, 2);
-	//modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
-
-	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
-	// This IS IMPORTANT!!! Without this transposition, the quad is totally screwed :) !
-	modelMat = XMMatrixTranspose(modelMat);
-	projMatSplash = XMMatrixTranspose(projMatSplash);
-
-	
 	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
-	std::vector<XMFLOAT3> mesh;
-	mesh.push_back({ -.5, 0.5, 0 });
-	mesh.push_back({ .5, -.5, 0 });
-	mesh.push_back({ -.5, -.5, 0 });
-	mesh.push_back({ .5, .5, 0 });
-	std::vector<XMFLOAT3> normals;
-	normals.push_back({ 0, 0, -1 });
-	normals.push_back({ 0, 0, -1 });
-	normals.push_back({ 0, 0, -1 });
-	normals.push_back({ 0, 0, -1 });
-	std::vector<XMFLOAT2> uvs;
-	uvs.push_back({ 1, 1 });
-	uvs.push_back({ 0, 0 });
-	uvs.push_back({ 1, 0 });
-	uvs.push_back({ 0, 1 });
-	std::vector<UINT> indices;
-	indices.push_back(0);
-	indices.push_back(1);
-	indices.push_back(2);
-	indices.push_back(0);
-	indices.push_back(3);
-	indices.push_back(1);
+	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
 
-	
+	// RenderSplash
+	{
+		const std::string splashFile = "textures/engine_splash.png";
+		Texture tex(splashFile, *renderer);
+		//loadTextureFromFile(GetIntroImageName(), &tex, renderer);
 
-	renderer->setViewport(0, 0, WIDTH, HEIGHT);
-	renderer->clearBackbuffer(clearColors);
-	// TODO rewrite to model
-	//renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
-	renderer->presentBackBuffer();
-	
-	cwprintf("bb cleared\n");
+		cwprintf("texture loaded\n");
 
-	Sleep(2);
+		modelMat = DirectX::XMMatrixScaling(2, 2, 2);
+		//modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
 
-	// render loading screen
-	safeRelease(&tex);
-	loadTextureFromFile(GetIntroImageName(), &tex, renderer);
-	renderer->clearBackbuffer(clearColors);
-	modelMat = DirectX::XMMatrixScaling(1.8f, 1.8f, 1.8f);
-	projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
-	// TODO rewrite to model
-	//renderer->renderMesh(mesh, uvs, normals, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
-	renderer->presentBackBuffer();
-	Sleep(3);
+		
+		// This IS IMPORTANT!!! Without this transposition, the quad is totally screwed :) !
+		modelMat = XMMatrixTranspose(modelMat);
+		projMatSplash = XMMatrixTranspose(projMatSplash);
+
+		renderer->setViewport(0, 0, WIDTH, HEIGHT);
+		renderer->clearBackbuffer(clearColors);
+
+		Model planeModel;
+		createPlaneModel(&planeModel, *renderer);
+		renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
+		renderer->presentBackBuffer();
+
+		Sleep(3000);
+	}
+
+	// Render loading screen
+	{
+		Texture tex(GetIntroImageName(), *renderer);
+		renderer->clearBackbuffer(clearColors);
+		modelMat = DirectX::XMMatrixScaling(1.8f, 1.8f, 1.8f);
+		projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
+		Model planeModel;
+		createPlaneModel(&planeModel, *renderer);
+		renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
+
+		renderer->presentBackBuffer();
+		Sleep(3000);
+	}
 
 	// Init the game
 	Game* game = GetGame();
@@ -370,7 +351,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	diKeyboard->Unacquire();
 	safeRelease(&diKeyboard);
 	safeRelease(&di);
-	safeRelease(&tex);
 	safeRelease(&inputLayout);
 	safeRelease(&pShader);
 	safeRelease(&vshader);
