@@ -76,6 +76,8 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 		_camMovZ += 0.02f * frameTime;
 	}
 
+	_camMovZ += 0.002f * frameTime;
+
 	if (input->keyState[DIK_S]) {
 		_camMovZ -= 0.02f * frameTime;
 	}
@@ -99,7 +101,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 			hexModelMat = XMMatrixTranspose(XMMatrixMultiply(hexModelMat, 
 				XMMatrixTranslation((-9) + x * 1.9 + 1.4 + xOffset, 0, y*2 + 2)));
 			renderer.renderModel(*_basicHex, hexModelMat, _viewMat, _projMat, 
-									_vs, _ps, _inputLayout, *_hexTex);
+								_vs, _ps, _inputLayout, *_hexTex);
 		}
 	}
 	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);

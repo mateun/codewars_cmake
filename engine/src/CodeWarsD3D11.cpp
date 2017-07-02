@@ -327,16 +327,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		OutputDebugString(buf);
 
 
-		int timeToWait = 16 - frameTime;
+		// TODO: this should come from the system refresh rate, 
+		// e.g. 60 HZ should give ~16
+		UINT desiredFrameTime = 9;
+		int timeToWait = desiredFrameTime - frameTime;
 		if (timeToWait < 0) {
-			OutputDebugString("waittime longer than 16ms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+			#ifdef GAME_DEBUG 
+			OutputDebugString("waittime longer than 16ms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"); 
+			#endif
 			timeToWait = 0;
 		}
 		
 		if (timeToWait > 0) {
+			#ifdef GAME_DEBUG 
 			sprintf_s(buf, 2000, "waitTime: %d\n", timeToWait);
 			OutputDebugString(buf);
-			Sleep(timeToWait);
+			#endif
+			// Commenting the sleep for now, as we are running in vsync mode, should not be needed!
+			//Sleep(timeToWait);
 		}
 				
 	}
