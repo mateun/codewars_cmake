@@ -189,8 +189,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	{
 		const std::string splashFile = "textures/engine_splash.png";
 		Texture tex(splashFile, *renderer);
-		//loadTextureFromFile(GetIntroImageName(), &tex, renderer);
-
+		
 		cwprintf("texture loaded\n");
 
 		modelMat = DirectX::XMMatrixScaling(2, 2, 2);
