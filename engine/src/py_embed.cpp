@@ -35,22 +35,22 @@ void callPyFunc() {
 		OutputDebugString("Val: ");
 	}
 	
-	Py_FinalizeEx();
+	//Py_FinalizeEx();
 }
 
 /// Embedding stuff
-PyMethodDef EmbMethods[] = {
+static PyMethodDef EmbMethods[] = {
 	{"get_player_health", emb_getHealth, METH_VARARGS,
 	"Return the current health value of the player given by its number."},
 	{NULL, NULL, 0, NULL}
 };
 
-PyModuleDef EmbModule = {
+static PyModuleDef EmbModule = {
 	PyModuleDef_HEAD_INIT, "codewars", NULL, -1, EmbMethods,
 	//NULL, NULL, NULL, NULL
 };
 
-PyObject* PyInit_emb(void) {
+static PyObject* PyInit_emb(void) {
 	try {
 		// BEWARE: I received an exception when linking to release 
 		// Python lib & dll. 
@@ -67,7 +67,7 @@ PyObject* PyInit_emb(void) {
 	}
 }
 
-PyObject* emb_getHealth(PyObject* self, PyObject* args) {
+static PyObject* emb_getHealth(PyObject* self, PyObject* args) {
 	OutputDebugString("emb_getHealth called from python!\n");
 	cwprintf("emb_getHealth called from python!\n");
 	int playerNr = 0;

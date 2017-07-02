@@ -78,6 +78,30 @@ bool Spacefight::InitPythonEnv() {
 	// We add our module to the system modules.
 	// Call this before Py_Initialize().
 	int res = PyImport_AppendInittab("spacefight", &PyInit_Spacefight);
+
+	Py_Initialize();
+	// Where to look for our scripts
+	PySys_SetPath(L"./games/spacefight/py_scripts");
+	// This is the name of our python script.
+	pName = PyUnicode_DecodeFSDefault("gamelogic");
+
+	pModule = PyImport_Import(pName);
+	pFunc = PyObject_GetAttrString(pModule, "doFrame");
+	
+	
+	pArgs = PyTuple_New(1);
+	pValue = PyLong_FromLong(1);
+	PyTuple_SetItem(pArgs, 0, pValue);
+	
+	PyObject* retval = PyObject_CallObject(pFunc, pArgs);
+	long val = PyLong_AsLong(retval);
+
+	// do something in between...
+	// and call again...
+	// Problem is, I can not hold the state of the python script!
+	// In the frame, if I reference the member variables, it crashes.
+	retval = PyObject_CallObject(pFunc, pArgs);
+	val = PyLong_AsLong(retval);
 	
 	return true;
 }
@@ -86,7 +110,7 @@ bool Spacefight::InitPythonEnv() {
 void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
 	// Python call
 	auto start = std::chrono::high_resolution_clock::now();
-	Py_Initialize();
+	/*Py_Initialize();
 	// Where to look for our scripts
 	PySys_SetPath(L"./games/spacefight/py_scripts");
 	// This is the name of our python script.
@@ -101,12 +125,12 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	
 	pArgs = PyTuple_New(1);
 	pValue = PyLong_FromLong(1);
-	PyTuple_SetItem(pArgs, 0, pValue);
-	pValue = PyObject_CallObject(pFunc, pArgs);
-	long val = PyLong_AsLong(pValue);
+	PyTuple_SetItem(pArgs, 0, pValue);*/
+	PyObject* retval = PyObject_CallObject(pFunc, pArgs);
+	long val = PyLong_AsLong(retval);
 	
-	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
-	cwprintf("time for python call (micros): %d\n", diff);
+	//diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
+	//cwprintf("time for python call (micros): %d\n", diff);
 	
 	
 	// End python frame stuff
