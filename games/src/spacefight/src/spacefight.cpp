@@ -298,7 +298,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	scaleMat = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
 	renderer.setViewport(0, 0, GAMEWIDTH, GAMEHEIGHT);
-	//renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
+	renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
 
 	safeRelease(&radarMapSRV);
 	safeRelease(&radarMapRTV);

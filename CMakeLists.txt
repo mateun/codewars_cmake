@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.6)
 project(codewars)
 
-set(FREEIMAGE_INCLUDE C:/Users/martin/Documents/Projects/C++/FreeImage/Source)
-set(ASSIMP_INCLUDE C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/include)
-set(ASSIMP_LIBD C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/build/code/Debug)
-set(ASSIMP_LIB C:/Users/Public/Documents/Programming/Libraries/assimp-3.3.1/build/code/Release)
+set(FREEIMAGE_INCLUDE D:/Projects/C++/FreeImage/Source)
+set(ASSIMP_INCLUDE D:/Projects/C++/assimp/include)
+set(ASSIMP_LIBD D:/Projects/C++/assimp/build/code/Debug)
+set(ASSIMP_LIB D:/Projects/C++/assimp/build/code/Release)
 
-set(FREEIMAGE_LIB C:/Users/martin/Documents/Projects/C++/FreeImage/Dist/x32)
+set(FREEIMAGE_LIB D:/Projects/C++/FreeImage/Dist/x32)
 set(PYTHON_LIB c:/Python36-32/libs)
 set(PYTHON_DLL c:/Python36-32)
 
@@ -26,8 +26,8 @@ file(GLOB game_sources games/src/**/src/*.cpp)
 
 
 add_executable(engine_main WIN32 ${engine_sources} ${game_sources})
-target_link_libraries(engine_main debug ${ASSIMP_LIBD}/assimp-vc120-mt.lib 
-								  optimized ${ASSIMP_LIB}/assimp-vc120-mt.lib 
+target_link_libraries(engine_main debug ${ASSIMP_LIBD}/assimp-vc140-mt.lib 
+								  optimized ${ASSIMP_LIB}/assimp-vc140-mt.lib 
 								  debug ${FREEIMAGE_LIB}/FreeImaged.lib 
 								  optimized ${FREEIMAGE_LIB}/FreeImage.lib 
 								  dxgi.lib dxguid.lib d3d11.lib dinput8.lib d3dcompiler.lib kernel32.lib 
@@ -36,7 +36,7 @@ target_link_libraries(engine_main debug ${ASSIMP_LIBD}/assimp-vc120-mt.lib
 
 add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
     COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
-        "${ASSIMP_LIB}/assimp-vc2017-mt.dll"      # <--this is in-file
+        "${ASSIMP_LIBD}/assimp-vc140-mt.dll"      # <--this is in-file
         $<TARGET_FILE_DIR:engine_main>)    
 
 add_custom_command(TARGET engine_main POST_BUILD        # Adds a post-build event to MyTest
