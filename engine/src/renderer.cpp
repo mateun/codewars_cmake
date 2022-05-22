@@ -84,6 +84,7 @@ void printTime(const std::string& text, const std::chrono::microseconds& diff) {
 
 }
 
+
 void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
 	ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, Texture& texture) {
 

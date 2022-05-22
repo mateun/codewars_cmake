@@ -9,7 +9,6 @@
 #include "model.h"
 #include <primitives.h>
 #include <chrono>
-#include <py_embed.h>
 #include <consoleprint.h>
 
 //////////////////////////////////
@@ -22,184 +21,16 @@ Game* GetGame() {
 ////////////////////////////////
 
 
-///////////////////////////////
-// Python stuff
-
-PyObject* spacefight_getHealth(PyObject* self, PyObject* args) {
-#ifdef _DEBUG
-	OutputDebugString("spacefight called\n");	
-#endif
-	int playerNr = 0;
-	int playerHealth = 100;
-	if (!PyArg_ParseTuple(args, "i", &playerNr)) {
-		return nullptr;
-	}
-
-	// TODO make fake impl real
-	// e.g. lookup health for player somewhere
-	return PyLong_FromLong(playerHealth);
-}
-
-PyObject* spacefight_translateGameObject(PyObject* self, PyObject* args) {
-#ifdef _DEBUG
-	OutputDebugString("spacefight.translateGameObject called\n");
-#endif
-
-	int goId;
-	
-	int posX, posY, posZ;
-	if (!PyArg_ParseTuple(args, "iiii", &goId, &posX, &posY, &posZ)) {
-		return nullptr;
-	}
-
-	// TODO: retrieve game object and translate it
-	return PyLong_FromVoidPtr(nullptr);
-}
-
-PyObject* spacefight_spawnGameObject(PyObject* self, PyObject* args) {
-#ifdef _DEBUG
-	OutputDebugString("spacefight.spawnGameObject called\n");
-#endif
-
-	char* goName;
-	int posX, posY, posZ;
-	if (!PyArg_ParseTuple(args, "siii", &goName, &posX, &posY, &posZ)) {
-		return nullptr;
-	}
-
-	// TODO: get unique game object id
-	return PyLong_FromLong(991);
-}
-
-PyObject* spacefight_registerModule(PyObject* self, PyObject* args) {
-#ifdef _DEBUG
-	OutputDebugString("spacefight.registerModule called\n");
-#endif
-
-	char* moduleName;
-	if (!PyArg_ParseTuple(args, "s", &moduleName)) {
-		return nullptr;
-	}
-	
-	spacefight.RegisterModule(moduleName);
-	return PyLong_FromVoidPtr(nullptr);
-}
-
-
-PyObject* spacefight_drawModel(PyObject* self, PyObject* args) {
-#ifdef _DEBUG
-	OutputDebugString("spacefight.drawModel called\n");
-#endif
-	
-	return PyLong_FromVoidPtr(nullptr);
-}
-
-PyMethodDef SpacefightMethods[] = {
-	{ "get_player_health", spacefight_getHealth, METH_VARARGS,
-	"Return the current health value of the player given by its number." },
-	{ "draw_model", spacefight_drawModel, METH_VARARGS,
-	"Draw a model." },
-	{ "spawn_game_object", spacefight_spawnGameObject, METH_VARARGS,
-	"Spawn a new game object." },
-	{ "register_game_module", spacefight_registerModule, METH_VARARGS,
-	"Register a game module." },
-	{ "game_object_translate", spacefight_translateGameObject, METH_VARARGS,
-	"Translate a game module." },
-	{ NULL, NULL, 0, NULL }
-};
-
-PyModuleDef SpacefightModule = {
-	PyModuleDef_HEAD_INIT, "spacefight", NULL, -1, SpacefightMethods,
-	//NULL, NULL, NULL, NULL
-};
-
-PyObject* PyInit_Spacefight(void) {
-	try {
-		// BEWARE: I received an exception when linking to release 
-		// Python lib & dll. 
-		// When in debug mode, it seems to be important to link to 
-		// debug python lib & dll. 
-		PyObject* m = PyModule_Create(&SpacefightModule);
-		if (m) {
-			OutputDebugString("loaded python module\n");
-			return m;
-		}
-	}
-	catch (...) {
-		OutputDebugString("caught exception while calling PyModuleCreate\n");
-	}
-}
-
-
-
-// end python stuff
-
-
-void Spacefight::RegisterModule(const std::string& moduleName) {
-
-	ScriptGameModule* module = new ScriptGameModule(moduleName);
-	_python_game_modules.push_back(module);
-	module->CallInit();
-}
-
 
 std::string Spacefight::GetIntroImageName() {
 	return "games/assets/spacefight/textures/spacefight_intro.png";
 }
 
-void Spacefight::DoPythonFrame() {
-	// TODO
-}
 
-bool Spacefight::InitPythonEnv() {
-	// We add our module to the system modules.
-	// Call this before Py_Initialize().
-	int res = PyImport_AppendInittab("spacefight", &PyInit_Spacefight);
-
-	Py_Initialize();
-	// Where to look for our scripts
-	PySys_SetPath(L"./games/assets/spacefight/py_scripts");
-	// This is the name of our python script.
-	pName = PyUnicode_DecodeFSDefault("gamelogic");
-
-	pModule = PyImport_Import(pName);
-	pFunc = PyObject_GetAttrString(pModule, "doFrame");
-	pFuncOnFirePressed = PyObject_GetAttrString(pModule, "onFirePressed");
-	PyObject* pFuncInitModules = PyObject_GetAttrString(pModule, "initModules");
-	
-	// Call "initModules" in python main script so it can 
-	// register additional modules for further use.
-	PyObject_CallObject(pFuncInitModules, nullptr);
-
-	// Initialize all the registered modules
-	
-	return true;
-}
 
 
 void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
-	// Python call
-	auto start = std::chrono::high_resolution_clock::now();
-	
-	pArgs = PyTuple_New(1);
-	pValue = PyLong_FromLong(1);
-	PyTuple_SetItem(pArgs, 0, pValue);
 
-	PyObject* retval = PyObject_CallObject(pFunc, pArgs);
-	long val = PyLong_AsLong(retval);
-	auto diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
-
-	retval = PyObject_CallObject(pFuncOnFirePressed, nullptr);
-	val = PyLong_AsLong(retval);
-
-	cwprintf("time for python call (micros): %d\n", diff);
-
-	for (auto& sm : _python_game_modules) {
-		sm->CallDoFrame();
-	}
-	
-	// End python frame stuff
-	
 	_menuShipRot += 0.007f;
 	_modelMat = XMMatrixIdentity();
 	
@@ -217,6 +48,8 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, GAMEWIDTH, GAMEHEIGHT);
+    renderer.renderModel(*_shipModel, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, *_shipTex);
+    renderer.renderModel(*_cardModel, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, *_anjaniTexture);
 	//renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
 	//renderer.renderMesh(_cardModel->positions, _cardModel->uvs, _cardModel->normals, _cardModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _anjaniTex);
 
@@ -261,17 +94,12 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	XMMATRIX viewMatS = XMMatrixTranspose(XMMatrixLookToLH(XMLoadFloat3(&eyePosS), XMLoadFloat3(&eyeDirS), XMLoadFloat3(&upDirS)));
 	XMMATRIX projMatSplash = XMMatrixTranspose(XMMatrixOrthographicLH(5.0f, 5.0f, 0.1f, 100.0f));
 
-	float clearColors[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	std::vector<XMFLOAT3> mesh;
-	std::vector<XMFLOAT3> normals;
-	std::vector<XMFLOAT2> uvs;
-	std::vector<UINT> indices;
-	fillQuadVertexData(mesh, uvs, normals, indices);
+	renderer.renderModel(*_planeModel, _modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, *_anjaniTexture);
 
-	//renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, _startButtonTex);
 
 	// RENDER TO TEXTURE
 	// Render the whole image to a texture from above and display it
+    float clearColors[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	ID3D11Texture2D* radarMapTex;
 	ID3D11RenderTargetView* radarMapRTV;
 	ID3D11ShaderResourceView* radarMapSRV;
@@ -298,7 +126,7 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 	scaleMat = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	modelMat = XMMatrixTranspose(XMMatrixMultiply(transMat, scaleMat));
 	renderer.setViewport(0, 0, GAMEWIDTH, GAMEHEIGHT);
-	renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
+//	renderer.renderMesh(mesh, uvs, normals, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, radarMapTex);
 
 	safeRelease(&radarMapSRV);
 	safeRelease(&radarMapRTV);
@@ -318,8 +146,7 @@ Spacefight::~Spacefight() {
 }
 
 void Spacefight::Init(Renderer& renderer) {
-	InitPythonEnv();
-	
+
 	// Import assets
 	_shipModel = new Model();
 	_simpleShipModel = new Model();
@@ -327,21 +154,31 @@ void Spacefight::Init(Renderer& renderer) {
 	_playTable = new Model();
 	_basicHex = new Model();
 	_server = new Model();
-	importModel("games/assets/spacefight/models/corvette1.obj", _shipModel, renderer);
-	importModel("games/assets/spacefight/models/simple_ship1.obj", _simpleShipModel, renderer);
-	importModel("games/assets/spacefight/models/card.obj", _cardModel, renderer);
-	importModel("games/assets/spacefight/models/play_table.obj", _playTable, renderer);
-	importModel("games/assets/spacefight/models/basic_hex.obj", _basicHex, renderer);
-	importModel("games/assets/spacefight/models/server.obj", _server, renderer);
+
+    std::vector<XMFLOAT3> mesh;
+    std::vector<XMFLOAT3> normals;
+    std::vector<XMFLOAT2> uvs;
+    std::vector<UINT> indices;
+    fillQuadVertexData(mesh, uvs, normals, indices);
+
+    _planeModel = createFromRawData(mesh, uvs, normals, indices, renderer);
+    //importObjModel("../games/assets/spacefight/models/plane.obj", _shipModel, renderer);
+    importObjModel("../games/assets/spacefight/models/corvette1.obj", _shipModel, renderer);
+//	importObjModel("../games/assets/spacefight/models/simple_ship1.obj", _simpleShipModel, renderer);
+//	importObjModel("../games/assets/spacefight/models/card.obj", _cardModel, renderer);
+//	importObjModel("../games/assets/spacefight/models/play_table.obj", _playTable, renderer);
+//	importObjModel("../games/assets/spacefight/models/basic_hex.obj", _basicHex, renderer);
+//	importObjModel("../games/assets/spacefight/models/server.obj", _server, renderer);
 
 	//loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &_shipTexture, &renderer);
-	loadTextureFromFile("games/assets/spacefight/models/ajani_diff.png", &_anjaniTex, &renderer);
-	loadTextureFromFile("games/assets/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
-	loadTextureFromFile("games/assets/spacefight/textures/StainedMetal.jpg", &_metalTex, &renderer);
+	loadTextureFromFile("../games/assets/spacefight/models/ajani_diff.png", &_anjaniTex, &renderer);
+	loadTextureFromFile("../games/assets/spacefight/textures/btn_start.png", &_startButtonTex, &renderer);
+	loadTextureFromFile("../games/assets/spacefight/textures/StainedMetal.jpg", &_metalTex, &renderer);
 	
-	_hexTex = new Texture("games/assets/spacefight/textures/HexTexture.png", renderer);
-	_serverTex = new Texture("games/assets/spacefight/textures/sdiff.png", renderer);
-	_shipTex = new Texture("games/assets/spacefight/textures/SF_Corvette-F3_diffuse.jpg", renderer);
+	_hexTex = new Texture("../games/assets/spacefight/textures/HexTexture.png", renderer);
+	_serverTex = new Texture("../games/assets/spacefight/textures/sdiff.png", renderer);
+	_shipTex = new Texture("../games/assets/spacefight/textures/SF_Corvette-F3_diffuse.jpg", renderer);
+    _anjaniTexture = new Texture(&_anjaniTex, renderer);
 
 	// Setup basic world, view and projection matrices
 	XMFLOAT3 eyePos = XMFLOAT3(0, 10, -25);
@@ -357,7 +194,7 @@ void Spacefight::Init(Renderer& renderer) {
 	/// SHADER SETUP
 	ID3DBlob* vs = nullptr;
 	ID3DBlob* errBlob = nullptr;
-	HRESULT res = D3DCompileFromFile(L"games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
+	HRESULT res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
 	if (FAILED(res)) {
 		OutputDebugStringW(L"vshader load failed\n");
 		if (errBlob)
@@ -372,7 +209,7 @@ void Spacefight::Init(Renderer& renderer) {
 		exit(1);
 	}
 	ID3DBlob* ps = nullptr;
-	res = D3DCompileFromFile(L"games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
+	res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
 	if (FAILED(res)) {
 		OutputDebugStringW(L"pshader load failed\n");
 		if (errBlob)
@@ -453,7 +290,5 @@ void Spacefight::ShutDown() {
 		delete(_serverTex); _serverTex = nullptr;
 	}
 
-	// Python cleanup
-	Py_FinalizeEx();
 
 }

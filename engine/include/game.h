@@ -2,7 +2,7 @@
 #include "renderer.h"
 #include <string>
 #include <input.h>
-#include <py_embed.h>
+
 
 
 /**
@@ -27,12 +27,6 @@ public:
 	virtual void Init(Renderer& renderer) = 0;
 	virtual void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) = 0;
 	virtual void ShutDown() = 0;
-
-	/**
-	This method is called from the engine once a frame
-	to allow the game to update its python based logic.
-	*/
-	virtual void DoPythonFrame() = 0;
 
 	/**
 	This method is called from the engine to retrieve the filename
@@ -68,9 +62,7 @@ public:
 	void CallInit();
 
 private:
-	PyObject* _pModule;
-	PyObject* _pFuncDoFrame;
-	PyObject* _pFuncInit;
+
 
 };
 

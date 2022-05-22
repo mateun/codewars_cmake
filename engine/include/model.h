@@ -29,4 +29,6 @@ struct Model {
 
 };
 
+Model* createFromRawData(std::vector<XMFLOAT3> positions, std::vector<XMFLOAT2> uvs, std::vector<XMFLOAT3> normals, std::vector<unsigned int> indices,
+                         Renderer& renderer);
 void createPlaneModel(Model* model, Renderer& renderer);

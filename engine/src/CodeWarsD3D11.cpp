@@ -14,7 +14,6 @@
 #include "input.h"
 #include <dinput.h>
 #include <chrono>
-#include <py_embed.h>
 #include <logging.h>
 
 #include <consoleprint.h>
@@ -126,7 +125,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	/// SHADER SETUP
 	ID3DBlob* vs = nullptr;
 	ID3DBlob* errBlob = nullptr;
-	HRESULT res = D3DCompileFromFile(L"games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
+	HRESULT res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
 	if (FAILED(res)) {
 		OutputDebugStringW(L"shader load failed\n");
 		cwprintf("vshader load failed\n");
@@ -142,7 +141,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		exit(1);
 	}
 	ID3DBlob* ps = nullptr;
-	res = D3DCompileFromFile(L"games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
+	res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
 	if (FAILED(res)) {
 		OutputDebugString("shader load failed\n");
 		cwprintf("pshader load failed\n");

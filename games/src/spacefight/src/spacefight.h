@@ -3,7 +3,7 @@
 #include "model.h"
 #include "input.h"
 #include "textures.h"
-#include <py_embed.h>
+
 #include <vector>
 #include <string>
 
@@ -15,10 +15,10 @@ class Spacefight : public Game {
 public:
 	Spacefight();
 	~Spacefight();
-	virtual void Init(Renderer& renderer); 
-	virtual void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) override;
+	void Init(Renderer& renderer) override;
+	void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) override;
 	virtual void ShutDown();
-	virtual void DoPythonFrame();
+
 	virtual std::string GetIntroImageName();
 	void RegisterModule(const std::string& module);
 
@@ -36,6 +36,7 @@ private:
 	Model* _playTable = nullptr;
 	Model* _basicHex = nullptr;
 	Model* _server = nullptr;
+    Model* _planeModel = nullptr;
 	ID3D11Texture2D* _shipTexture = nullptr;
 	ID3D11Texture2D* _startButtonTex = nullptr;
 	ID3D11Texture2D* _anjaniTex = nullptr;
@@ -43,19 +44,12 @@ private:
 	Texture* _hexTex = nullptr;
 	Texture* _serverTex = nullptr;
 	Texture* _shipTex = nullptr;
+    Texture* _anjaniTexture = nullptr;
+    Texture* _startButtonTexture = nullptr;
 	
 
 	float _menuShipRot = 0;
 	float _sineUpDown = 0;
 	float _camMovZ = 0;
 
-	// Python stuff
-	PyObject *pName, *pModule, *pDict, *pFunc;
-	PyObject *pArgs, *pValue;
-	PyObject* pFuncOnFirePressed;
-
-	std::vector<ScriptGameModule*> _python_game_modules;
-
-
-	bool InitPythonEnv();
 };

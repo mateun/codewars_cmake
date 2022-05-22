@@ -11,6 +11,7 @@ class Texture {
 
 public:
 	Texture(const std::string& fileName, Renderer& renderer);
+    Texture(ID3D11Texture2D** tex, Renderer& renderer);
 	virtual ~Texture();
 
 	ID3D11Texture2D** getTexture() { return &_tex; }
