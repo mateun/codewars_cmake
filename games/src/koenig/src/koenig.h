@@ -1,5 +1,5 @@
 #pragma once
-#include <game.h>
+#include "game.h"
 #include "model.h"
 #include "input.h"
 #include "textures.h"
@@ -7,19 +7,22 @@
 #include <vector>
 #include <string>
 
-constexpr unsigned int GAMEWIDTH = 1600;
-constexpr unsigned int GAMEHEIGHT = 900;
+constexpr unsigned int GAMEWIDTH = 1280;
+constexpr unsigned int GAMEHEIGHT = 720;
 
-class Spacefight : public Game {
+class Koenig : public Game {
 
 public:
-    Spacefight();
-	~Spacefight();
+	Koenig();
+	~Koenig();
 	void Init(Renderer& renderer) override;
 	void DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) override;
 	virtual void ShutDown();
 
-	virtual std::string GetIntroImageName();
+	std::string GetIntroImageName() override;
+    int getScreenWidth() override { return GAMEWIDTH; }
+    int getScreenHeight() override { return GAMEHEIGHT;}
+
 	void RegisterModule(const std::string& module);
 
 private:

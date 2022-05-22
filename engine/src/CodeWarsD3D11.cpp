@@ -15,6 +15,7 @@
 #include <dinput.h>
 #include <chrono>
 #include <logging.h>
+#include "engine.h"
 
 #include <consoleprint.h>
 
@@ -39,6 +40,9 @@ bool keyState[256];
 DIMOUSESTATE mouseState;
 int mouseMovX, mouseMovY;
 // end DINPUT
+
+static bool run = true;
+static EngineData* engineData = nullptr;
 
 void initDirectInput(HINSTANCE hinstance, HWND hwnd) {
 	HRESULT res = DirectInput8Create(hinstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&di, nullptr);
@@ -81,7 +85,175 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-Renderer* renderer;
+
+
+void initSplash() {
+
+    auto game = GetGame();
+
+    XMMATRIX modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
+    XMFLOAT3 eyePos = XMFLOAT3(0, 0, -5);
+    XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
+    XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
+    XMMATRIX viewMat =XMMatrixTranspose( XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
+
+    if (!game) {
+        OutputDebugString("No game was provided via GetGame function\n");
+        cwprintf("no game was provided via GetGame function\n");
+        exit(1);
+    }
+
+    float clearColors[] = { 0.0f, 0.02f, 0.02f, 1.0f };
+    XMMATRIX projMatSplash = XMMatrixTranspose(XMMatrixOrthographicOffCenterLH(0, game->getScreenWidth(),0, game->getScreenHeight(), 0.1f, 100.0f));
+
+
+    Model planeModel;
+    createPlaneModel(&planeModel, *engineData->renderer);
+    engineData->renderer->setViewport(0, 0, game->getScreenWidth(), game->getScreenHeight());
+
+    // RenderSplash
+    {
+        const std::string splashFile = "../engine/textures/engine_splash.png";
+        Texture tex(splashFile, *engineData->renderer);
+
+        auto matScale = XMMatrixScaling(game->getScreenWidth(), game->getScreenHeight(), 1);
+        modelMat = XMMatrixTranspose(XMMatrixMultiply(matScale, XMMatrixTranslation(game->getScreenWidth()/2, game->getScreenHeight()/3, 0)));
+        engineData->renderer->enableAlphaBlending(true);
+
+        engineData->renderer->clearBackbuffer(clearColors);
+        engineData->renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, tex);
+        engineData->renderer->presentBackBuffer();
+        Sleep(3000);
+        float factor = 0.001;
+        for (int i = 0; i < 5000; i++) {
+            float col = 1.0f - (factor * (float)i);
+            if (col < 0) col = 0;
+            engineData->renderer->setAmbientColor({col, col, col, 1});
+            engineData->renderer->clearBackbuffer(clearColors);
+            engineData->renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, tex);
+            engineData->renderer->presentBackBuffer();
+        }
+
+    }
+
+    // Render loading screen
+    {
+        Texture tex(game->GetIntroImageName(), *engineData->renderer);
+
+        auto mtrans = XMMatrixTranslation(game->getScreenWidth()/2, game->getScreenHeight()/2, 0);
+        auto mscale = DirectX::XMMatrixScaling(game->getScreenWidth(), game->getScreenHeight(), 1);
+        modelMat = XMMatrixTranspose(XMMatrixMultiply(mscale, mtrans));
+        engineData->renderer->clearBackbuffer(clearColors);
+        engineData->renderer->setAmbientColor({1, 1, 1, 1});
+        engineData->renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, tex);
+        engineData->renderer->presentBackBuffer();
+        Sleep(4000);
+    }
+
+}
+
+WPARAM mainLoop() {
+    auto game = GetGame();
+    ////////////////////////////////////////////////
+    // Main message loop wrapping the game loop
+    ////////////////////////////////////////////////
+    MSG msg;
+    UINT frameTime = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    while (run) {
+        start = std::chrono::high_resolution_clock::now();
+
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
+        if (msg.message == WM_QUIT) break;
+
+        // gather the keyboard input
+        FrameInput frameInput;
+        HRESULT res = diKeyboard->GetDeviceState(sizeof(keyState), (void**)&keyState);
+        if (FAILED(res)) {
+            diKeyboard->Acquire();
+        }
+        frameInput.keyState = keyState;
+
+        // gather mouse data - bit more complicated...
+        DWORD numElements = 1;
+        DIDEVICEOBJECTDATA data;
+        ZeroMemory(&data, sizeof(data));
+
+        res = diMouse->GetDeviceState(sizeof(mouseState), (void**)&mouseState);
+        if (FAILED(res)) {
+            diMouse->Acquire();
+        }
+        frameInput.relMouseMovX = mouseState.lX;
+        frameInput.relMouseMovY = mouseState.lY;
+
+        res = diMouse->GetDeviceData(sizeof(data), &data, &numElements, 0);
+        if (FAILED(res)) {
+            diMouse->Acquire();
+        }
+        switch (data.dwOfs) {
+            case DIMOFS_BUTTON0:
+                if (data.dwData) {
+                    frameInput.mouse1Down = true; break;
+                }
+                else {
+                    frameInput.mouse1Up = true; break;
+                }
+            case DIMOFS_BUTTON1:
+                if (data.dwData) {
+                    frameInput.mouse2Down = true; break;
+                }
+                else {
+                    frameInput.mouse2Up = true; break;
+                }
+        }
+
+
+
+        // end input gathering
+
+        game->DoFrame(*getEngineData()->renderer, &frameInput, frameTime);
+        frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+
+#ifdef GAME_DEBUG
+        char buf[2000];
+		sprintf_s(buf, 2000, "============================frametime: %d\n", frameTime);
+		OutputDebugString(buf);
+#endif
+
+
+        // TODO: this should come from the system refresh rate,
+        // e.g. 60 HZ should give ~16
+        UINT desiredFrameTime = 16;
+        int timeToWait = desiredFrameTime - frameTime;
+        if (timeToWait < 0) {
+#ifdef GAME_DEBUG
+            OutputDebugString("waittime longer than 16ms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+#endif
+            timeToWait = 0;
+        }
+
+        if (timeToWait > 0) {
+#ifdef GAME_DEBUG
+            sprintf_s(buf, 2000, "waitTime: %d\n", timeToWait);
+			OutputDebugString(buf);
+#endif
+            // Sleep is not needed for vsync, but we need it to give a bit of breathing room for the machine,
+            // otherwise it runs right away with > 40%.
+            Sleep(timeToWait);
+        }
+
+    }
+
+    return msg.wParam;
+}
+
+
+
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -100,6 +272,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	LoadStringW(hInstance, IDC_CODEWARSD3D11, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
+
+
 	// Perform application initialization:
 	if (!InitInstance(hInstance, nCmdShow))
 	{
@@ -108,247 +282,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CODEWARSD3D11));
 
-#pragma region splash_and_loading_screen
+    initSplash();
 
-
-	XMMATRIX modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
-
-	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -55);
-	XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
-	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
-	XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
-	XMMATRIX projMat = DirectX::XMMatrixPerspectiveFovLH(0.45f, 4.0f / 3.0f, 0.1f, 100.0f);
-	modelMat = XMMatrixTranspose(modelMat);
-	viewMat = XMMatrixTranspose(viewMat);
-	projMat = XMMatrixTranspose(projMat);
-
-	/// SHADER SETUP
-	ID3DBlob* vs = nullptr;
-	ID3DBlob* errBlob = nullptr;
-	HRESULT res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
-	if (FAILED(res)) {
-		OutputDebugStringW(L"shader load failed\n");
-		cwprintf("vshader load failed\n");
-		if (errBlob)
-		{
-			OutputDebugStringA((char*)errBlob->GetBufferPointer());
-			safeRelease(&errBlob);
-		}
-
-		if (vs)
-			safeRelease(&vs);
-
-		exit(1);
-	}
-	ID3DBlob* ps = nullptr;
-	res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
-	if (FAILED(res)) {
-		OutputDebugString("shader load failed\n");
-		cwprintf("pshader load failed\n");
-		if (errBlob)
-		{
-			OutputDebugStringA((char*)errBlob->GetBufferPointer());
-			safeRelease(&errBlob);
-		}
-
-		if (ps)
-			safeRelease(&ps);
-
-		exit(1);
-	}
-	ID3D11VertexShader* vshader;
-	CreateVertexShader(renderer->getDevice(), vs, &vshader);
-	ID3D11PixelShader* pShader;
-	CreatePixelShader(renderer->getDevice(), ps, &pShader);
-	/// END SHADER SETUP
-
-	cwprintf("shaders created\n");
-
-	/// INPUT LAYOUT SETUP
-	D3D11_INPUT_ELEMENT_DESC ied[] = {
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },	// same slot, but 12 bytes after the pos
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },		// other slot (buffer), starting at 0
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }		// other slot (buffer), starting at 0
-
-	};
-	ID3D11InputLayout* inputLayout;
-	res = const_cast<ID3D11Device*>(renderer->getDevice())->CreateInputLayout(ied, 3, vs->GetBufferPointer(), vs->GetBufferSize(), &inputLayout);
-	if (FAILED(res)) {
-		OutputDebugString("input layout in main failed\n");
-		cwprintf("input layout failed\n");
-		exit(1);
-	}
-	/// END INPUT LAYOUT SETUP
-
-	Game* game = GetGame();
-	if (!game) {
-		OutputDebugString("No game was provided via GetGame function\n");
-		cwprintf("no game was provided via GetGame function\n");
-		exit(1);
-	}
-
-	float clearColors[] = { 0.01f, 0.02f, 0.02f, 1.0f };
-	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
-
-	// RenderSplash
-	{
-		const std::string splashFile = "textures/engine_splash.png";
-		Texture tex(splashFile, *renderer);
-		
-		cwprintf("texture loaded\n");
-
-		modelMat = DirectX::XMMatrixScaling(2, 2, 2);
-		//modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
-
-		
-		// This IS IMPORTANT!!! Without this transposition, the quad is totally screwed :) !
-		modelMat = XMMatrixTranspose(modelMat);
-		projMatSplash = XMMatrixTranspose(projMatSplash);
-
-		renderer->setViewport(0, 0, WIDTH, HEIGHT);
-		renderer->clearBackbuffer(clearColors);
-
-		Model planeModel;
-		createPlaneModel(&planeModel, *renderer);
-		renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
-		renderer->presentBackBuffer();
-
-		Sleep(500);
-	}
-
-	// Render loading screen
-	{
-		Texture tex(game->GetIntroImageName(), *renderer);
-		renderer->clearBackbuffer(clearColors);
-		modelMat = DirectX::XMMatrixScaling(1.8f, 1.8f, 1.8f);
-		projMatSplash = DirectX::XMMatrixOrthographicLH(2.0f, 2.0f, 0.1f, 100.0f);
-		Model planeModel;
-		createPlaneModel(&planeModel, *renderer);
-		renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
-
-		renderer->presentBackBuffer();
-		Sleep(500);
-	}
-
-	
-
-	cwprintf("doing game init\n");
-	game->Init(*renderer);
-	cwprintf("game init done\n");
-
-	
-	float rotZ = 0.0f;
-	
-	#pragma endregion
-
-	////////////////////////////////////////////////
-	// Main message loop wrapping the game loop
-	////////////////////////////////////////////////
-	MSG msg;
-	UINT frameTime = 0;
-	auto start = std::chrono::high_resolution_clock::now();
-	while (true) {
-		start = std::chrono::high_resolution_clock::now();
-
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-
-		if (msg.message == WM_QUIT) break;
-
-		// gather the keyboard input
-		FrameInput frameInput;
-		HRESULT res = diKeyboard->GetDeviceState(sizeof(keyState), (void**)&keyState);
-		if (FAILED(res)) {
-			diKeyboard->Acquire();
-		}
-		frameInput.keyState = keyState;
-
-		// gather mouse data - bit more complicated...
-		DWORD numElements = 1;
-		DIDEVICEOBJECTDATA data;
-		ZeroMemory(&data, sizeof(data));
-
-		res = diMouse->GetDeviceState(sizeof(mouseState), (void**)&mouseState);
-		if (FAILED(res)) {
-			diMouse->Acquire();
-		}
-		frameInput.relMouseMovX = mouseState.lX;
-		frameInput.relMouseMovY = mouseState.lY;
-
-		res = diMouse->GetDeviceData(sizeof(data), &data, &numElements, 0);
-		if (FAILED(res)) {
-			diMouse->Acquire();
-		}
-		switch (data.dwOfs) {
-		case DIMOFS_BUTTON0:
-			if (data.dwData) {
-				frameInput.mouse1Down = true; break;
-			}
-			else {
-				frameInput.mouse1Up = true; break;
-			}
-		case DIMOFS_BUTTON1:
-			if (data.dwData) {
-				frameInput.mouse2Down = true; break;
-			}
-			else {
-				frameInput.mouse2Up = true; break;
-			}
-		}
-
-
-
-		// end input gathering
-
-		game->DoFrame(*renderer, &frameInput, frameTime);
-		frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-
-		#ifdef GAME_DEBUG 
-		char buf[2000];
-		sprintf_s(buf, 2000, "============================frametime: %d\n", frameTime);
-		OutputDebugString(buf);
-		#endif	
-
-
-		// TODO: this should come from the system refresh rate, 
-		// e.g. 60 HZ should give ~16
-		UINT desiredFrameTime = 16;
-		int timeToWait = desiredFrameTime - frameTime;
-		if (timeToWait < 0) {
-			#ifdef GAME_DEBUG 
-			OutputDebugString("waittime longer than 16ms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"); 
-			#endif
-			timeToWait = 0;
-		}
-		
-		if (timeToWait > 0) {
-			#ifdef GAME_DEBUG 
-			sprintf_s(buf, 2000, "waitTime: %d\n", timeToWait);
-			OutputDebugString(buf);
-			#endif
-			// Sleep is not needed for vsync, but we need it to give a bit of breathing room for the machine, 
-			// otherwise it runs right away with > 40%.
-			Sleep(timeToWait);
-		}
-				
-	}
+    auto wparam = mainLoop();
 
 	diKeyboard->Unacquire();
 	safeRelease(&diKeyboard);
 	safeRelease(&di);
-	safeRelease(&inputLayout);
-	safeRelease(&pShader);
-	safeRelease(&vshader);
-	safeRelease(&ps);
-	safeRelease(&vs);
-	safeRelease(&errBlob);
-	game->ShutDown();
-	if (renderer) delete(renderer);
+
+    shutdownEngine(engineData);
 	
-    return (int) msg.wParam;
+    return (int) wparam;
 }
 
 
@@ -372,7 +316,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_CODEWARSD3D11));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName = "menu"; //MAKEINTRESOURCEW(IDC_CODEWARSD3D11);
+	wcex.lpszMenuName = NULL;
     wcex.lpszClassName  = "winclass";
     //wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -391,38 +335,48 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-
-   cwprintf("In init instance.\n");
+    cwprintf("In init instance.\n");
    
-   hInst = hInstance; // Store instance handle in our global variable
+    hInst = hInstance; // Store instance handle in our global variable
 
-   HWND hWnd = CreateWindow("winclass", 
+    auto game = GetGame();
+    RECT corrRect = {0, 0, game->getScreenWidth(), game->getScreenHeight()};
+    AdjustWindowRect(&corrRect, WS_OVERLAPPEDWINDOW, false);
+
+    HWND hWnd = CreateWindow("winclass",
 					"codewars", 
 					WS_OVERLAPPEDWINDOW,
-					CW_USEDEFAULT, 0, 
-					WIDTH, HEIGHT, 
+					CW_USEDEFAULT, 0,
+                    corrRect.right - corrRect.left, corrRect.bottom - corrRect.top,
 					nullptr, nullptr, 
 					hInstance, 
 					nullptr);
 
-   if (!hWnd)
-   {
-      return FALSE;
-   }
-   cwprintf("Window created.\n");
-   flog("Window created.\n");
-   
-   renderer = new Renderer(WIDTH, HEIGHT, hWnd);
-   cwprintf("renderer created.\n");
-   
-   initDirectInput(hInst, hWnd);
-   cwprintf("DI initialized.\n");
-   flog("DI initialized.\n");
+    if (!hWnd)
+    {
+       return FALSE;
+    }
+    cwprintf("Window created.\n");
+    flog("Window created.\n");
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
 
-   return TRUE;
+    cwprintf("game created.\n");
+    engineData = initEngine(game->getScreenWidth(), game->getScreenHeight(), hWnd);
+    cwprintf("engine initialized.\n");
+    game->Init(*getEngineData()->renderer);
+    cwprintf("game initialized.\n");
+
+
+
+    cwprintf("DI initialized.\n");
+    flog("DI initialized.\n");
+
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+
+    initDirectInput(hInst, hWnd);
+
+    return TRUE;
 }
 
 //

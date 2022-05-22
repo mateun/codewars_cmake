@@ -57,5 +57,5 @@ float4 PShader(float4 position : SV_POSITION, float2 tex : TEXCOORD0, float3 nor
 	outcol.a = color.a;
 	return outcol;
 
-	//return float4(1, 0.2, 0.2, 1);
+
 }

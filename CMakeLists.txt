@@ -11,11 +11,9 @@ include_directories(${FREEIMAGE_INCLUDE})
 #link_directories(${PYTHON_LIB} ${ASSIMP_LIB} ${FREEIMAGE_LIB} )
 
 file(GLOB engine_sources engine/src/*.cpp)
-file(GLOB game_sources games/src/spacefight/src/*.cpp)
-#file(GLOB game_sources games/src/**/src/*.cpp)
+file(GLOB game_sources games/src/koenig/src/*.cpp)
 
-
-add_executable(engine_main WIN32 ${engine_sources} ${game_sources})
+add_executable(engine_main WIN32 ${engine_sources} ${game_sources} engine/include/engine_init.cpp)
 #target_link_libraries(engine_main debug ${ASSIMP_LIBD}/assimp-vc140-mt.lib
 #								  optimized ${ASSIMP_LIB}/assimp-vc140-mt.lib
 #								  debug ${FREEIMAGE_LIB}/FreeImaged.lib

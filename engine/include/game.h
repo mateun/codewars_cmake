@@ -36,6 +36,10 @@ public:
 	*/
 	virtual std::string GetIntroImageName() = 0;
 
+	virtual int getScreenWidth() = 0;
+	virtual int getScreenHeight() = 0;
+
+
 };
 
 /**

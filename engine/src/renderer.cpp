@@ -1,10 +1,13 @@
+
 #include "stdafx.h"
+#include <d3d11_4.h>
 #include "renderer.h"
 #include <dxgi.h>
 #include <chrono>
 #include <string>
 #include <logging.h>
 #include <consoleprint.h>
+#include "engine.h"
 
 Renderer::Renderer(int w, int h, HWND hWnd) {
 	init(w, h, hWnd);
@@ -149,7 +152,7 @@ void Renderer::renderModel(const Model& model, const XMMATRIX &modelMatrix, cons
 	LightBufferType* dataPtrLight;
 	res = _ctx->Map(lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &bufSR);
 	dataPtrLight = (LightBufferType*)bufSR.pData;
-	dataPtrLight->ambientcol = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	dataPtrLight->ambientcol = _ambientColor;
 	_ctx->Unmap(lightBuffer, 0);
 	_ctx->PSSetConstantBuffers(0, 1, &lightBuffer);
 	diff = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -470,6 +473,30 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
+
+    D3D11_BLEND_DESC BlendState;
+    ZeroMemory(&BlendState, sizeof(D3D11_BLEND_DESC));
+    BlendState.RenderTarget[0].BlendEnable = FALSE;
+    BlendState.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    auto res = _device->CreateBlendState(&BlendState, &_blendStateNoTransparency);
+    if (FAILED(res)) {
+        exit(1);
+    }
+
+    BlendState.RenderTarget[0].BlendEnable = TRUE;
+    BlendState.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    BlendState.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    BlendState.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    BlendState.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    BlendState.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    BlendState.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    BlendState.RenderTarget[0].RenderTargetWriteMask = 0x0f;
+
+     res = _device->CreateBlendState(&BlendState, &_blendStateTransparency);
+    if (FAILED(res)) {
+        exit(1);
+    }
+
 	// Currently we just use the default from D3D11 ...
 	//ID3D11DepthStencilState *m_DepthStencilState;
 	//result = _device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilState);
@@ -478,5 +505,23 @@ void Renderer::init(int w, int h, HWND hWnd) {
 		exit(1);
 	}*/
 	//_ctx->OMSetDepthStencilState(m_DepthStencilState, 0);
+
+}
+
+void Renderer::renderModel(const Model &model, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix,
+                           const XMMATRIX &projMatrix, Texture &texture) {
+    renderModel(model, modelMatrix, viewMatrix, projMatrix, getEngineData()->vShader,
+                getEngineData()->pShader, getEngineData()->inputLayout, texture);
+}
+
+void Renderer::enableAlphaBlending(bool value) {
+    float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    UINT sampleMask   = 0xffffffff;
+    if (value) {
+        _ctx->OMSetBlendState(_blendStateTransparency, blendFactor, sampleMask);
+    } else {
+        _ctx->OMSetBlendState(_blendStateNoTransparency, blendFactor, sampleMask);
+    }
+
 
 }

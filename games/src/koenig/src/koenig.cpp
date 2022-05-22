@@ -1,35 +1,33 @@
-#include <stdafx.h>
-#include "spacefight.h"
-#include <model_import.h>
-#include <textures.h>
-#include <shaders.h>
+#include "stdafx.h"
+#include "koenig.h"
+#include "model_import.h"
+#include "textures.h"
+#include "shaders.h"
 #include <d3dcompiler.h>
-#include <resource_management.h>
+#include "resource_management.h"
 #include <dinput.h>
 #include "model.h"
-#include <primitives.h>
+#include "primitives.h"
 #include <chrono>
-#include <consoleprint.h>
+#include "consoleprint.h"
 
 //////////////////////////////////
 // The game object itself
-static Spacefight spacefight;
+static Koenig koenig;
 
 Game* GetGame() {
-	return &spacefight;
+	return &koenig;
 }
 ////////////////////////////////
 
-
-
-std::string Spacefight::GetIntroImageName() {
-	return "../games/assets/spacefight/textures/spacefight_intro.png";
+std::string Koenig::GetIntroImageName() {
+	return "../games/assets/koenig/textures/koenig_splash.png";
 }
 
 
 
 
-void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
+void Koenig::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime) {
 
 	_menuShipRot += 0.007f;
 	_modelMat = XMMatrixIdentity();
@@ -130,15 +128,15 @@ void Spacefight::DoFrame(Renderer& renderer, FrameInput* input, long long frameT
 
 }
 
-Spacefight::Koenig() : clearColors{0.0f, 0.0f, 0.0f, 1.0f } {
+Koenig::Koenig() : clearColors{ 0.0f, 0.0f, 0.0f, 1.0f } {
 
 }
 
-Spacefight::~Koenig() {
+Koenig::~Koenig() {
 	ShutDown();
 }
 
-void Spacefight::Init(Renderer& renderer) {
+void Koenig::Init(Renderer& renderer) {
 
 	// Import assets
 	_shipModel = new Model();
@@ -249,7 +247,7 @@ void Spacefight::Init(Renderer& renderer) {
 	
 }
 
-void Spacefight::ShutDown() {
+void Koenig::ShutDown() {
 	safeRelease(&_vs);
 	safeRelease(&_ps);
 	safeRelease(&_shipTexture);

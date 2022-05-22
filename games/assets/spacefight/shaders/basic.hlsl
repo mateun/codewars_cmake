@@ -22,9 +22,10 @@ cbuffer LightBuffer {
 VOut VShader(float4 position : POSITION, float2 tex : TEXCOORD0, float3 norm : NORMAL) {
 
 	VOut output;
-	output.pos = mul(position, worldm);
-	output.pos = mul(output.pos, viewm);
-	output.pos = mul(output.pos, projm);
+//	output.pos = position * worldm * viewm * projm;
+ 	output.pos = mul(position, worldm);
+ 	output.pos = mul(output.pos, viewm);
+ 	output.pos = mul(output.pos, projm);
 	output.normal = normalize(norm); //normalize(mul(float4(norm, 0), worldm).xyz);
 	output.light_dir = float3(-0.1, 0.9, -0.1);
 	//output.pos = position;
