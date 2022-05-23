@@ -44,6 +44,7 @@ void Koenig::DoFrame(Renderer& renderer, FrameInput* input, long long frameTime)
 	_modelMat = XMMatrixMultiply(_modelMat, rotMatY);
 	//_modelMat = XMMatrixTranspose(XMMatrixMultiply(_modelMat, transZ));
 
+    renderer.setAmbientColor({1, 1, 1, 1});
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, GAMEWIDTH, GAMEHEIGHT);
     renderer.renderModel(*_shipModel, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, *_shipTex);

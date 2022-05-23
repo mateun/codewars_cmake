@@ -13,7 +13,7 @@ include_directories(${FREEIMAGE_INCLUDE})
 file(GLOB engine_sources engine/src/*.cpp)
 file(GLOB game_sources games/src/koenig/src/*.cpp)
 
-add_executable(engine_main WIN32 ${engine_sources} ${game_sources} engine/include/engine_init.cpp)
+add_executable(engine_main WIN32 ${engine_sources} ${game_sources} engine/include/engine_init.cpp engine/include/gamestate.h)
 #target_link_libraries(engine_main debug ${ASSIMP_LIBD}/assimp-vc140-mt.lib
 #								  optimized ${ASSIMP_LIB}/assimp-vc140-mt.lib
 #								  debug ${FREEIMAGE_LIB}/FreeImaged.lib

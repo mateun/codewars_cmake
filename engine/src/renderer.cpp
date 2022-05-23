@@ -510,18 +510,21 @@ void Renderer::init(int w, int h, HWND hWnd) {
 
 void Renderer::renderModel(const Model &model, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix,
                            const XMMATRIX &projMatrix, Texture &texture) {
-    renderModel(model, modelMatrix, viewMatrix, projMatrix, getEngineData()->vShader,
-                getEngineData()->pShader, getEngineData()->inputLayout, texture);
+    renderModel(model, modelMatrix, viewMatrix, projMatrix, _vShader,
+                _pShader, getEngineData()->inputLayout, texture);
 }
 
 void Renderer::enableAlphaBlending(bool value) {
-    float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     UINT sampleMask   = 0xffffffff;
     if (value) {
         _ctx->OMSetBlendState(_blendStateTransparency, blendFactor, sampleMask);
     } else {
         _ctx->OMSetBlendState(_blendStateNoTransparency, blendFactor, sampleMask);
     }
+}
 
-
+void Renderer::setShader(ID3D11VertexShader *vShader, ID3D11PixelShader *pShader) {
+    _vShader = vShader;
+    _pShader = pShader;
 }

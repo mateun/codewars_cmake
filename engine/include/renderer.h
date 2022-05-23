@@ -54,6 +54,8 @@ public:
 
 	void enableAlphaBlending(bool value);
 
+    void setShader(ID3D11VertexShader *vShader, ID3D11PixelShader *pShader);
+
 private:
 	void init(int w, int h, HWND hWnd);
 	ID3D11Device *_device;
@@ -67,4 +69,6 @@ private:
 	ID3D11BlendState* _blendStateTransparency = nullptr;
 	ID3D11BlendState* _blendStateNoTransparency = nullptr;
 	XMFLOAT4 _ambientColor = {1, 1, 1, 1};
+    ID3D11VertexShader* _vShader = nullptr;
+    ID3D11PixelShader* _pShader = nullptr;
 };

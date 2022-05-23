@@ -17,6 +17,9 @@ struct EngineData {
     ID3D11InputLayout* inputLayout = nullptr;
     ID3D11VertexShader* vShader = nullptr;
     ID3D11PixelShader* pShader = nullptr;
+
+    ID3D11VertexShader* vShader2D = nullptr;
+    ID3D11PixelShader* pShader2D = nullptr;
 };
 
 EngineData* getEngineData();

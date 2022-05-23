@@ -16,6 +16,7 @@
 #include <chrono>
 #include <logging.h>
 #include "engine.h"
+#include "gamestate.h"
 
 #include <consoleprint.h>
 
@@ -43,6 +44,8 @@ int mouseMovX, mouseMovY;
 
 static bool run = true;
 static EngineData* engineData = nullptr;
+static MetaGameState metaGameState = MetaGameState::IN_GAME_SPLASH;
+
 
 void initDirectInput(HINSTANCE hinstance, HWND hwnd) {
 	HRESULT res = DirectInput8Create(hinstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&di, nullptr);
@@ -86,8 +89,13 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-
-void initSplash() {
+void renderEngineSplash(UINT frameTime) {
+    static float currentTime = 0;
+    cwprintf("frameTime: %u\n", frameTime);
+    currentTime += ((float)frameTime/1000.0f);
+    if (currentTime > 3) {
+        metaGameState = MetaGameState::IN_GAME_SPLASH;
+    }
 
     auto game = GetGame();
 
@@ -119,22 +127,48 @@ void initSplash() {
         auto matScale = XMMatrixScaling(game->getScreenWidth(), game->getScreenHeight(), 1);
         modelMat = XMMatrixTranspose(XMMatrixMultiply(matScale, XMMatrixTranslation(game->getScreenWidth()/2, game->getScreenHeight()/3, 0)));
         engineData->renderer->enableAlphaBlending(true);
-
+        float col = max(0, 1-currentTime);
+        cwprintf("col: %f\n", col);
+        engineData->renderer->setAmbientColor({col, col, col, 1});
         engineData->renderer->clearBackbuffer(clearColors);
+        engineData->renderer->setShader(engineData->vShader2D, engineData->pShader2D);
         engineData->renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, tex);
         engineData->renderer->presentBackBuffer();
-        Sleep(3000);
-        float factor = 0.001;
-        for (int i = 0; i < 5000; i++) {
-            float col = 1.0f - (factor * (float)i);
-            if (col < 0) col = 0;
-            engineData->renderer->setAmbientColor({col, col, col, 1});
-            engineData->renderer->clearBackbuffer(clearColors);
-            engineData->renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, tex);
-            engineData->renderer->presentBackBuffer();
-        }
-
     }
+}
+
+
+void renderGameSplash(UINT frameTime) {
+    static float currentTime = 0;
+    cwprintf("frameTime in gamesplash: %u\n", frameTime);
+    currentTime += ((float)frameTime/1000.0f);
+    if (currentTime > 2) {
+        metaGameState = MetaGameState::IN_GAME;
+        engineData->renderer->setAmbientColor({1, 1, 1, 1});
+    }
+
+    auto game = GetGame();
+
+    XMMATRIX modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
+    XMFLOAT3 eyePos = XMFLOAT3(0, 0, -5);
+    XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
+    XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
+    XMMATRIX viewMat =XMMatrixTranspose( XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir)));
+
+    if (!game) {
+        OutputDebugString("No game was provided via GetGame function\n");
+        cwprintf("no game was provided via GetGame function\n");
+        exit(1);
+    }
+
+    float clearColors[] = { 0.0f, 0.02f, 0.02f, 1.0f };
+    XMMATRIX projMatSplash = XMMatrixTranspose(XMMatrixOrthographicOffCenterLH(0, game->getScreenWidth(),0, game->getScreenHeight(), 0.1f, 100.0f));
+
+
+    Model planeModel;
+    createPlaneModel(&planeModel, *engineData->renderer);
+    engineData->renderer->setViewport(0, 0, game->getScreenWidth(), game->getScreenHeight());
+
 
     // Render loading screen
     {
@@ -143,11 +177,12 @@ void initSplash() {
         auto mtrans = XMMatrixTranslation(game->getScreenWidth()/2, game->getScreenHeight()/2, 0);
         auto mscale = DirectX::XMMatrixScaling(game->getScreenWidth(), game->getScreenHeight(), 1);
         modelMat = XMMatrixTranspose(XMMatrixMultiply(mscale, mtrans));
+        engineData->renderer->setShader(engineData->vShader2D, engineData->pShader2D);
         engineData->renderer->clearBackbuffer(clearColors);
-        engineData->renderer->setAmbientColor({1, 1, 1, 1});
+        float col = max(0, 1-currentTime);
+        engineData->renderer->setAmbientColor({col, col, col, 1});
         engineData->renderer->renderModel(planeModel, modelMat, viewMat, projMatSplash, tex);
         engineData->renderer->presentBackBuffer();
-        Sleep(4000);
     }
 
 }
@@ -211,12 +246,23 @@ WPARAM mainLoop() {
                 }
         }
 
-
-
         // end input gathering
 
-        game->DoFrame(*getEngineData()->renderer, &frameInput, frameTime);
+        if (metaGameState == MetaGameState::PRE_SPLASH) {
+           // do nothing, just a blank screen
+        }
+        else if (metaGameState == MetaGameState::IN_ENGINE_SPLASH) {
+            //renderEngineSplash(frameTime);
+        }
+        else if (metaGameState == MetaGameState::IN_GAME_SPLASH) {
+            renderGameSplash(frameTime);
+        }
+        else if (metaGameState == MetaGameState::IN_GAME) {
+            game->DoFrame(*getEngineData()->renderer, &frameInput, frameTime);
+
+        }
         frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+
 
 #ifdef GAME_DEBUG
         char buf[2000];
@@ -281,9 +327,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CODEWARSD3D11));
-
-    initSplash();
-
     auto wparam = mainLoop();
 
 	diKeyboard->Unacquire();
@@ -365,8 +408,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     cwprintf("engine initialized.\n");
     game->Init(*getEngineData()->renderer);
     cwprintf("game initialized.\n");
-
-
 
     cwprintf("DI initialized.\n");
     flog("DI initialized.\n");

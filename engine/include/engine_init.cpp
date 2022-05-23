@@ -21,10 +21,10 @@ EngineData* initEngine(int width, int height, HWND hwnd) {
         exit(1);
     }
 
-    /// SHADER SETUP
+//region SHADER 3DSETUP
     ID3DBlob* vs = nullptr;
     ID3DBlob* errBlob = nullptr;
-    HRESULT res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
+    HRESULT res = D3DCompileFromFile(L"../engine/shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
     if (FAILED(res)) {
         OutputDebugStringW(L"shader load failed\n");
         cwprintf("vshader load failed\n");
@@ -40,7 +40,7 @@ EngineData* initEngine(int width, int height, HWND hwnd) {
         exit(1);
     }
     ID3DBlob* ps = nullptr;
-    res = D3DCompileFromFile(L"../games/assets/spacefight/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
+    res = D3DCompileFromFile(L"../engine/shaders/basic.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps, &errBlob);
     if (FAILED(res)) {
         OutputDebugString("shader load failed\n");
         cwprintf("pshader load failed\n");
@@ -59,7 +59,50 @@ EngineData* initEngine(int width, int height, HWND hwnd) {
     CreateVertexShader(engineData->renderer->getDevice(), vs, &engineData->vShader);
     CreatePixelShader(engineData->renderer->getDevice(), ps, &engineData->pShader);
 
-    /// END SHADER SETUP
+//endregion END SHADER 3D SETUP
+
+
+//region SHADER 2D SETUP
+    ID3DBlob* vs2D = nullptr;
+
+    res = D3DCompileFromFile(L"../engine/shaders/basic2d.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs2D, &errBlob);
+    if (FAILED(res)) {
+        OutputDebugStringW(L"shader load failed\n");
+        cwprintf("vshader2D load failed\n");
+        if (errBlob)
+        {
+            OutputDebugStringA((char*)errBlob->GetBufferPointer());
+            cwprintf("shader compile error: %s\n", (char*)errBlob->GetBufferPointer());
+            safeRelease(&errBlob);
+        }
+
+        if (vs2D)
+            safeRelease(&vs);
+
+        exit(1);
+    }
+    ID3DBlob* ps2D = nullptr;
+    res = D3DCompileFromFile(L"../engine/shaders/basic2d.hlsl", NULL, NULL, "PShader", "ps_5_0", 0, 0, &ps2D, &errBlob);
+    if (FAILED(res)) {
+        OutputDebugString("shader load failed\n");
+        cwprintf("pshader2D load failed\n");
+        if (errBlob)
+        {
+            OutputDebugStringA((char*)errBlob->GetBufferPointer());
+            cwprintf("shader compile error: %s\n", (char*)errBlob->GetBufferPointer());
+            safeRelease(&errBlob);
+        }
+
+        if (ps)
+            safeRelease(&ps);
+
+        exit(1);
+    }
+
+    CreateVertexShader(engineData->renderer->getDevice(), vs2D, &engineData->vShader2D);
+    CreatePixelShader(engineData->renderer->getDevice(), ps2D, &engineData->pShader2D);
+
+//endregion END SHADER 3D SETUP
 
     D3D11_INPUT_ELEMENT_DESC ied[] = {
             {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
